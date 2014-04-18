@@ -447,7 +447,7 @@ define(
              */
             function getCenter(index) {
                 var index = index || 0;
-                return self.parseCenter(polar[index].center);
+                return self.parseCenter(zr, polar[index].center);
             }
 
             /**
@@ -711,11 +711,11 @@ define(
                     if (!power) {
                         str = (delta + '').split('.')[0];
                         n = str.length;
-                        if (str[0] >= 5) {
+                        if (str.charAt(0) >= 5) {
                             return Math.pow(10, n);
                         }
                         else {
-                            return (str[0] - 0 + 1 ) * Math.pow(10, n - 1);
+                            return (str.charAt(0) - 0 + 1 ) * Math.pow(10, n - 1);
                         }
                     }
                     else {
@@ -781,19 +781,30 @@ define(
                 var min = indicator.value.min;
                 var alpha;
 
-                if (typeof value != 'number') {
+                if (typeof value == 'undefined') {
                     return center;
                 }
-                else {
-                    if ( max != min) {
-                        alpha = (value - min) / (max - min);
-                    }
-                    else {
-                        alpha = 0.5;
-                    }
-                    
-                    return _mapVector(vector, center, alpha);
+                
+                switch (value) {
+                    case 'min' :
+                        value = min;
+                        break;
+                    case 'max' :
+                        value = max;
+                        break;
+                    case 'center' :
+                        value = (max + min) / 2;
+                        break;
                 }
+                
+                if (max != min) {
+                    alpha = (value - min) / (max - min);
+                }
+                else {
+                    alpha = 0.5;
+                }
+                
+                return _mapVector(vector, center, alpha);
             }
 
             /**

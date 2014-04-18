@@ -78,10 +78,10 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     polar : [
@@ -242,7 +242,7 @@ option = {
             markPoint : {
                 symbol: 'emptyHeart',
                 data : [
-                    {name : '打酱油的标注', value : 100, x:'50%', y:'15%', symbolSize:32},
+                    {name : '打酱油的标注', value : 100, x:'50%', y:'15%', symbolSize:32}
                 ]
             }
         }

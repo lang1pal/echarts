@@ -58,8 +58,8 @@ define(function(require) {
                         continue;
                     }
                     
-                    center = self.parseCenter(series[i].center);
-                    radius = self.parseRadius(series[i].radius);
+                    center = self.parseCenter(zr, series[i].center);
+                    radius = self.parseRadius(zr, series[i].radius);
                     _selectedMode = _selectedMode || series[i].selectedMode;
                     _selected[i] = [];
                     if (self.deepQuery([series[i], option], 'calculable')) {
@@ -121,7 +121,7 @@ define(function(require) {
                 } else {
                     self.selectedMap[itemName] = true;
                 }
-                if (self.selectedMap[itemName]) {
+                if (self.selectedMap[itemName] && !isNaN(data[i].value)) {
                     if (+data[i].value !== 0) {
                         totalSelected++;
                     }
@@ -150,7 +150,7 @@ define(function(require) {
 
             for (var i = 0, l = data.length; i < l; i++){
                 itemName = data[i].name;
-                if (!self.selectedMap[itemName]) {
+                if (!self.selectedMap[itemName] || isNaN(data[i].value)) {
                     continue;
                 }
                 // 默认颜色策略
@@ -178,7 +178,7 @@ define(function(require) {
                 endAngle = endAngle.toFixed(2) - 0;
                 percent = (percent * 100).toFixed(2);
                 
-                radius = self.parseRadius(serie.radius);
+                radius = self.parseRadius(zr, serie.radius);
                 r0 = +radius[0];
                 r1 = +radius[1];
                 
@@ -287,7 +287,7 @@ define(function(require) {
             var serie = series[seriesIndex];
             var data = serie.data[dataIndex];
             var queryTarget = [data, serie];
-            var center = self.parseCenter(serie.center);
+            var center = self.parseCenter(zr, serie.center);
 
             // 多级控制
             var normal = self.deepMerge(
@@ -298,8 +298,10 @@ define(function(require) {
                 queryTarget,
                 'itemStyle.emphasis'
             ) || {};
-            var normalColor = normal.color || defaultColor;
-            var emphasisColor = emphasis.color 
+            var normalColor = self.getItemStyleColor(normal.color, seriesIndex, dataIndex, data)
+                              || defaultColor;
+            
+            var emphasisColor = self.getItemStyleColor(emphasis.color, seriesIndex, dataIndex, data)
                 || (typeof normalColor == 'string'
                     ? zrColor.lift(normalColor, -0.2)
                     : normalColor
@@ -324,7 +326,6 @@ define(function(require) {
                 },
                 highlightStyle : {
                     color : emphasisColor,
-                    strokeColor : 'rgba(0,0,0,0)',
                     lineWidth : emphasis.borderWidth,
                     strokeColor : emphasis.borderColor,
                     lineJoin: 'round'
@@ -400,15 +401,17 @@ define(function(require) {
             var labelControl = itemStyle[status].label;
             var textStyle = labelControl.textStyle || {};
 
-            var center = self.parseCenter(serie.center);
+            var center = self.parseCenter(zr, serie.center);
             var centerX = center[0];                      // 圆心横坐标
             var centerY = center[1];                      // 圆心纵坐标
             var x;
             var y;
             var midAngle = ((endAngle + startAngle) / 2 + 360) % 360; // 中值
-            var radius = self.parseRadius(serie.radius);  // 标签位置半径
+            var radius = self.parseRadius(zr, serie.radius);  // 标签位置半径
             var textAlign;
             var textBaseline = 'middle';
+            labelControl.position = labelControl.position 
+                                    || itemStyle.normal.label.position;
             if (labelControl.position == 'center') {
                 // center显示
                 radius = radius[1];
@@ -539,13 +542,13 @@ define(function(require) {
                 var labelLineControl = itemStyle[status].labelLine;
                 var lineStyle = labelLineControl.lineStyle || {};
 
-                var center = self.parseCenter(serie.center);
+                var center = self.parseCenter(zr, serie.center);
                 var centerX = center[0];                    // 圆心横坐标
                 var centerY = center[1];                    // 圆心纵坐标
                 // 视觉引导线起点半径
                 var midRadius = r1;
                 // 视觉引导线终点半径
-                var maxRadius = self.parseRadius(serie.radius)[1] 
+                var maxRadius = self.parseRadius(zr, serie.radius)[1] 
                                 - (-labelLineControl.length)
                                 + lastAddRadius;
                 var midAngle = ((endAngle + startAngle) / 2) % 360; // 角度中值

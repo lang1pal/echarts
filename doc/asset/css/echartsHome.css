@@ -133,7 +133,10 @@ body {
 }
 .main {
     height: 400px;
-    /*width: 800px;*/
+    /*
+    height : 400px !important;
+    width : 800px !important;
+    */
     overflow: hidden;
     padding : 10px;
     margin-bottom: 10px;
@@ -158,12 +161,14 @@ ul.nav-list {
     float: left;
     cursor : pointer;
     opacity: .3;
+    filter:alpha(opacity=30);
 }
 i.icon-chevron-right{
     float: right;
     margin-top: 2px;
     margin-right: -6px;
     opacity: .25;
+    filter:alpha(opacity=25);
 }
 .page-header {
     padding-top:35px;
@@ -264,7 +269,6 @@ table.full {width:100%;}
 .ADoc_table th, .ADoc_table td {
     border:1px solid rgb(23,53,81);
     padding: 3px;
-    background:#fff;
     color:#222;
 }
 
@@ -273,11 +277,32 @@ table.full {width:100%;}
     background:rgb(37,78,117);
     color:#fff;
 }
-
+.bgRed {
+    background:rgb(255,230,230);
+}
+.bgGreen {
+    background:rgb(230,255,230);
+}
+.bgBlue {
+    background:rgb(210,230,255);
+}
 #icon-resize {
     float:right;
     opacity:.3;
+    filter:alpha(opacity=30);
 }
 a#icon-resize:hover {
     opacity:.6;
+    filter:alpha(opacity=60);
+}
+
+.prettyprint {
+  margin-top: 8px;
+}
+.prettyprint xmp{   
+  margin: 0px;
+  padding: 10px;
+}
+.prettyprint .pln {
+  line-height: 0px;
 }

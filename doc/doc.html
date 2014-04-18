@@ -136,12 +136,15 @@
                                 <li><a href="#BackgroundColor">backgroundColor</a></li>
                                 <li><a href="#Color">color</a></li>
                                 <li><a href="#SymbolList">symbolList</a></li>
+                                <li><a href="#RenderAsImage">renderAsImage</a></li>
                                 <li><a href="#Calculable">calculable</a></li>
                                 <li><a href="#CalculableColor">calculableColor</a></li>
                                 <li><a href="#CalculableHolderColor">calculableHolderColor</a></li>
                                 <li><a href="#NameConnector">nameConnector</a></li>
                                 <li><a href="#ValueConnector">valueConnector</a></li>
                                 <li><a href="#Animation">animation</a></li>
+                                <li><a href="#AddDataAnimation">addDataAnimation</a></li>
+                                <li><a href="#AnimationThreshold">animationThreshold</a></li>
                                 <li><a href="#AnimationDuration">animationDuration</a></li>
                                 <li><a href="#AnimationEasing">animationEasing</a></li>
                             </ul>
@@ -151,6 +154,7 @@
                             <ul>
                                 <li><a href="#附录组件实例接口">组件实例接口</a></li>
                                 <ul>
+                                    <li><a href="#TooltipInterface">tooltip</a></li>
                                     <li><a href="#LegendInterface">legend</a></li>
                                     <li><a href="#DataRangeInterface">dataRange</a></li>
                                     <li><a href="#DataZoomInterface">dataZoom</a></li>
@@ -187,7 +191,8 @@
             </div>
             <div class="span9">
                 <p style="margin:10px 0 -30px 0">
-                    <a href="mailto:kener.linfeng@gmail.com">Any feedback or question ? »</a>
+                    <a href="./start.html" target="_blank">入门教程 ( Getting started ) »</a><br/>
+                    <a href="mailto:echarts@baidu.com">Any feedback or question ? »</a>
                 </p>
                 <div id="doc">
                     <h3>简介<a name="简介"> </a></h3>
@@ -449,7 +454,7 @@ require.config({
                         <pre>//from echarts example
 require.config({
     paths:{ 
-        'echarts:'./js/echarts',
+        'echarts':'./js/echarts',
         'echarts/chart/bar' : './js/echarts',       // 把所需图表指向单文件
         'echarts/chart/line': './js/echarts'
     }
@@ -543,7 +548,20 @@ require(
                     <p>更详细的配置在build/config-tpl.js目录下，具体的配置项使用可以参考requirejs optimizer的<a href="https://github.com/jrburke/r.js/blob/master/build/example.build.js">example build file</a>，要注意的的是optimize, include, wrap三个配置项会在build过程中根据输入的参数被改掉，所以不建议直接修改这三个配置项，修改config-tpl.js最常见的场景是zrender和echarts不在同一个目录下从而需要修改zrender的package路径。</p>
 
                     <h3>初始化<a name="初始化"> </a></h3>
-                    <p>通过require获得echarts接口后可实例化图表，echarts接口仅有一个方法init，执行init时传入一个具备大小的dom节点（width、height可被计算得到即可，不一定可见）后即可实例化出图表对象，图表库实现为多实例的，同一页面可多次init出多个图表。图表实例可用方法见<a href="#方法">方法</a>，</p>
+                    <p>通过require获得echarts接口后可实例化图表，echarts接口仅有一个方法init，执行init时传入一个具备大小的dom节点（width、height可被计算得到即可，不一定可见）后即可实例化出图表对象，图表库实现为多实例的，同一页面可在多个dom上init出多个图表，同一个dom上多次init将自动释放已有实例（1.4.0+）。init方法说明如下：</p>
+                    <table cellspacing="0" class="ADoc_table full">
+                        <tr>
+                            <th> 名称 </th>
+                            <th> 参数 </th>
+                            <th> 描述 </th>
+                        </tr>
+                        <tr>
+                            <td> <b>{ECharts}</b> init </td>
+                            <td> <b>{dom}</b> dom, <br/><b>{string | Object =}</b> theme </td>
+                            <td> 初始化接口，返回ECharts实例，其中dom为图表所在节点，theme为可选的主题，内置主题（暂无）直接传入名称，自定义扩展主题可传入主题对象</td>
+                        </tr>
+                    </table>
+                    <p>图表实例可用方法见<a href="#方法">方法</a></p>
                     <p>引入ECharts后的的初始化代码如下：</p>
                     <div class="code">
                         <pre>
@@ -589,7 +607,7 @@ require(['echarts'], function(ec){
                         </tr>
                         <tr>
                             <td><b>{self}</b> setOption</td>
-                            <td><b>{Object}</b> option, <br/>{boolean=} notMerge</td>
+                            <td><b>{Object}</b> option, <br/><b>{boolean=}</b> notMerge</td>
                             <td>万能接口，配置图表实例任何可配置选项（详见<a href="#Option" title="">option</a>），多次调用时option选项是默认是合并（merge）的，<br/>如果不需求，可以通过notMerger参数为true阻止与上次option的合并。 </td>
                         </tr>
                         <tr>
@@ -599,7 +617,7 @@ require(['echarts'], function(ec){
                         </tr>
                         <tr>
                             <td><b>{self}</b> setSeries</td>
-                            <td><b>{Array}</b> series, <br/>{boolean=} notMerge</td>
+                            <td><b>{Array}</b> series, <br/><b>{boolean=}</b> notMerge</td>
                             <td>数据接口，驱动图表生成的数据内容（详见<a href="#Series" title="">series</a>），效果等同调用setOption({series:{...}}) </td>
                         </tr>
                         <tr>
@@ -611,10 +629,10 @@ require(['echarts'], function(ec){
                             <td><b>{self}</b> addData</td>
                             <td>单组数据：
                                 <br/><b>{number}</b> seriesIdx
-                                <br/>{number | Object} data
-                                <br/>{boolean=} isHead
-                                <br/>{boolean=} dataGrow
-                                <br/>{string=} additionData
+                                <br/><b>{number | Object}</b> data
+                                <br/><b>{boolean=}</b> isHead
+                                <br/><b>{boolean=}</b> dataGrow
+                                <br/><b>{string=}</b> additionData
                                 <br/>多组数据添加：
                                 <br/><b>{Array}</b> params
                             </td>
@@ -632,16 +650,32 @@ require(['echarts'], function(ec){
                             <td><b>{self}</b> on</td>
                             <td><b>{string}</b> eventName, <br/><b>{Function}</b> eventListener</td>
                             <td>事件绑定，支持事件有：
-                                <br/>REFRESH，RESTORE，CLICK，HOVER，
+                                <br/>REFRESH，RESTORE，RESIZE，CLICK，HOVER，
                                 <br/>DATA_CHANGED，MAGIC_TYPE_CHANGED，DATA_VIEW_CHANGED，
-                                <br/>DATA_ZOOM，DATA_RANGE，LEGEND_SELECTED，MAP_SELECTED
+                                <br/>DATA_ZOOM，DATA_RANGE，MAP_ROAM，
+                                <br/>LEGEND_SELECTED，MAP_SELECTED，PIE_SELECTED，
                                 <br/>事件命名统一挂载到require('echarts/config').EVENT（非模块化为echarts.config.EVENT）命名空间下，建议使用此命名空间作为事件名引用。
+                                     <a href="./example/event.html" target="_blank">事件调试 »</a>
                             </td>
                         </tr>
                         <tr>
                             <td><b>{self}</b> un</td>
                             <td><b>{string}</b> eventName, <br/><b>{Function}</b> eventListener</td>
                             <td>事件解绑定 </td>
+                        </tr>
+                        <tr>
+                            <td><b>{self}</b> connect</td>
+                            <td><b>{ECharts | Array &lt;ECharts&gt;}</b> connectTarget</td>
+                            <td>多图联动，传入联动目标为EChart实例，支持数组。多图联动支持直角系下tooltip联动，保存图片的自动拼接，同时支持的联动事件有：
+                                <br/>REFRESH，RESTORE，MAGIC_TYPE_CHANGED
+                                <br/>DATA_ZOOM，DATA_RANGE，LEGEND_SELECTED
+                                <br/><a href="./example/mix8.html" target="_blank">多图联动 »</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><b>{self}</b> disConnect</td>
+                            <td><b>{ECharts | Array &lt;ECharts&gt;}</b> connectTarget</td>
+                            <td>解除已连结的多图联动 </td>
                         </tr>
                         <tr>
                             <td><b>{self}</b> showLoading</td>
@@ -654,18 +688,18 @@ require(['echarts'], function(ec){
                             <td>过渡控制，隐藏loading（读取中） </td>
                         </tr>
                         <tr>
-                            <td>{ZRender} getZrender</td>
+                            <td><b>{ZRender}</b> getZrender</td>
                             <td><b>{void}</b></td>
                             <td>获取当前图表所用ZRender实例，可用于添加额外图形或进行深度定制，zrender接口详见<a href="http://ecomfe.github.io/zrender/doc/doc.html#zrenderInstance" target="_blank">ZRender</a> </td>
                         </tr>
                         <tr>
                             <td><b>{string}</b> getDataURL</td>
-                            <td>{string=} imgType</td>
+                            <td><b>{string=}</b> imgType</td>
                             <td>获取当前图表的Base64图片dataURL，imgType 图片类型，支持png|jpeg，默认为png</td>
                         </tr>
                         <tr>
                             <td><b>{Dom}</b> getImage</td>
-                            <td>{string=} imgType</td>
+                            <td><b>{string=}</b> imgType</td>
                             <td>获取一个当前图表的img，imgType 图片类型，支持png|jpeg，默认为png</td>
                         </tr>
                         <tr>
@@ -697,53 +731,81 @@ require(['echarts'], function(ec){
                     <h3>选项<a name="选项"> </a></h3>
 
                     <h4>option<a name="Option"> </a></h4>
-                    <P> 图表选项，包含图表实例任何可配置选项</P>
+                    <P> 图表选项，包含图表实例任何可配置选项：<span class='bgGreen'> 公共选项 </span>，<span class='bgRed'> 组件选项 </span>，<span class='bgBlue'> 数据选项 </span></P>
                     <table cellspacing="0" class="ADoc_table full">
                         <tr>
                             <th> 名称 </th>
                             <th> 描述 </th>
                         </tr>
-                        <tr>
-                            <td> <b>{Array}</b> color </td>
-                            <td> 数值系列的颜色列表，默认为null则采用内置颜色，可配数组，eg：['#87cefa', 'rgba(123,123,123,0.5)','...']，当系列数量个数比颜色列表长度大时将循环选取 </td>
+                        <tr class='bgGreen'>
+                            <td> <b>{color}</b> backgroundColor </td>
+                            <td> 全图默认背景，（详见<a href="#BackgroundColor" title="">backgroundColor</a>），默认为无，透明</td>
                         </tr>
-                         <tr>
+                        <tr class='bgGreen'>
+                            <td> <b>{Array}</b> color </td>
+                            <td> 数值系列的颜色列表，（详见<a href="#Color" title="">color</a>），可配数组，eg：['#87cefa', 'rgba(123,123,123,0.5)','...']，当系列数量个数比颜色列表长度大时将循环选取 </td>
+                        </tr>
+                        <tr class='bgGreen'>
+                            <td> <b>{boolean}</b> renderAsImage </td>
+                            <td> 非IE8-支持渲染为图片，（详见<a href="#RenderAsImage" title="">renderAsImage</a>）</td>
+                        </tr>
+                        <tr class='bgGreen'>
+                            <td> <b>{boolean}</b> calculable </td>
+                            <td> 是否启用拖拽重计算特性，默认关闭，（详见<a href="#calculable" title="">calculable</a>，相关的还有
+                                <a href="#CalculableColor" title="">calculableColor</a>，
+                                <a href="#CalculableHolderColor" title="">calculableHolderColor</a>，
+                                <a href="#NameConnector" title="">nameConnector</a>，
+                                <a href="#ValueConnector" title="">valueConnector</a>）
+                            </td>
+                        </tr>
+                        <tr class='bgGreen'>
+                            <td> <b>{boolean}</b> animation </td>
+                            <td> 是否开启动画，默认开启，（详见
+                                <a href="#Animation" title="">animation</a>，相关的还有
+                                <a href="#AddDataAnimation" title="">addDataAnimation</a>，
+                                <a href="#AnimationThreshold" title="">animationThreshold</a>，
+                                <a href="#AnimationDuration" title="">animationDuration</a>，
+                                <a href="#AnimationEasing" title="">animationEasing</a>）
+                            </td>
+                        </tr>
+                        
+                         <tr class='bgRed'>
                             <td> <b>{Object}</b> title </td>
                             <td> 标题（详见<a href="#Title" title="">title</a>），每个图表最多仅有一个标题控件 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Object}</b> legend </td>
                             <td> 图例（详见<a href="#Legend" title="">legend</a>），每个图表最多仅有一个图例，混搭图表共享 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Object}</b> dataRange </td>
                             <td> 值域选择（详见<a href="#DataRange" title="">dataRange</a>）,值域范围 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Object}</b> toolbox </td>
                             <td> 工具箱（详见<a href="#Toolbox" title="">toolbox</a>），每个图表最多仅有一个工具箱 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Object}</b> tooltip </td>
                             <td> 提示框（详见<a href="#Tooltip" title="">tooltip</a>），鼠标悬浮交互时的信息提示 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Object}</b> dataZoom </td>
                             <td> 数据区域缩放（详见<a href="#DataZoom" title="">dataZoom</a>）,数据展现范围选择 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Object}</b> grid </td>
                             <td> 直角坐标系内绘图网格（详见<a href="#Grid" title="">grid</a>） </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Array | Object}</b> xAxis </td>
                             <td> 直角坐标系中横轴数组（详见<a href="#Xaxis" title="">xAxis</a>），数组中每一项代表一条横轴坐标轴，标准（1.0）中规定最多同时存在2条横轴 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgRed'>
                             <td> <b>{Array | Object}</b> yAxis </td>
                             <td> 直角坐标系中纵轴数组（详见<a href="#Yaxis" title="">yAxis</a>），数组中每一项代表一条纵轴坐标轴，标准（1.0）中规定最多同时存在2条纵轴 </td>
                         </tr>
-                        <tr>
+                        <tr class='bgBlue'>
                             <td> <b>{Array}</b> series </td>
                             <td> 驱动图表生成的数据内容（详见<a href="#Series" title="">series</a>），数组中每一项代表一个系列的特殊选项及数据 </td>
                         </tr>
@@ -897,12 +959,12 @@ require(['echarts'], function(ec){
                         <tr>
                             <td> <b>{Object}</b> textStyle </td>
                             <td> {color: '#333'} </td>
-                            <td> 默认只设定了图例文字颜色（详见<a href="#TextStyle" title="">textStyle</a>） </td>
+                            <td> 默认只设定了图例文字颜色（详见<a href="#TextStyle" title="">textStyle</a>） ，更个性化的是，要指定文字颜色跟随图例，可设color为'auto'</td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> selectedMode </td>
+                            <td> <b>{boolean | string}</b> selectedMode </td>
                             <td> true </td>
-                            <td> 选择模式，默认开启图例开关 </td>
+                            <td> 选择模式，默认开启图例开关，可选single，multiple </td>
                         </tr>
                         <tr>
                             <td> <b>{Object}</b> selected </td>
@@ -912,7 +974,10 @@ require(['echarts'], function(ec){
                         <tr>
                             <td> {Array &lt;string&gt;} data </td>
                             <td> [ ] </td>
-                            <td> 图例内容数组，数组项为<b>{string}</b>，每一项代表一个系列的name。<br/>使用根据该值索引<a href="#Series" title="">series</a>中同名系列所用的图表类型和itemStyle，如果索引不到，该item将默认为没启用状态。</td>
+                            <td> 图例内容数组，数组项通常为<b>{string}</b>，每一项代表一个系列的name。
+                                <br/>使用根据该值索引<a href="#Series" title="">series</a>中同名系列所用的图表类型和itemStyle，如果索引不到，该item将默认为没启用状态。
+                                <br/>如需个性化图例文字样式，可把数组项改为<b>{Object}</b>，格式为{name: <b>{string}</b>, textStyle: <b>{Object}</b>}
+                            </td>
                         </tr>
                     </table>
                     <p><img src="./asset/img/doc/legend.png" title="" alt="图例"/></P>
@@ -998,12 +1063,12 @@ require(['echarts'], function(ec){
                             <td> 分割段数，默认为5，为0时为线性渐变 </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> calculable </td>
+                            <td> <b>{boolean}</b> calculable </td>
                             <td> false </td>
                             <td> 是否启用值域漫游，启用后无视splitNumber，值域显示为线性渐变 </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> realtime </td>
+                            <td> <b>{boolean}</b> realtime </td>
                             <td> true </td>
                             <td> 值域漫游是否实时显示 </td>
                         </tr>
@@ -1026,7 +1091,7 @@ require(['echarts'], function(ec){
                     <p><img src="./asset/img/doc/dataRange.png" title="" alt="值域"/></P>
 
                     <h4>toolbox<a name="Toolbox"> </a></h4>
-                    <P> 工具箱，每个图表最多仅有一个工具箱。</P>
+                    <P> 工具箱，每个图表最多仅有一个工具箱。<a href="example/toolbox.html" target="_blank">try this »</a></P>
                     <table cellspacing="0" class="ADoc_table full">
                         <tr>
                             <th> 名称 </th>
@@ -1034,7 +1099,7 @@ require(['echarts'], function(ec){
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> false </td>
                             <td> 显示策略，可选为：true（显示） | false（隐藏） </td>
                         </tr>
@@ -1089,49 +1154,85 @@ require(['echarts'], function(ec){
                             <td> 工具箱icon颜色序列，循环使用 </td>
                         </tr>
                         <tr>
-                            <td> <b>{Object}</b> feature </td>
-                            <td> {} </td>
-                            <td> 启用功能，目前支持feature见下</td>
-                        </tr>
-                        <tr>
-                            <td> <b>{Boolean}</b> showTitle </td>
+                            <td> <b>{boolean}</b> showTitle </td>
                             <td> true </td>
                             <td> 是否显示工具箱文字提示，默认启用</td>
                         </tr>
                         <tr>
-                            <td> <b>{Object}</b> featureTitle </td>
-                            <td> {<br/>
-                                    mark : '辅助线开关',<br/>
-                                    markUndo : '删除辅助线',<br/>
-                                    markClear : '清空辅助线',<br/>
-                                    dataZoom : '区域缩放',<br/>
-                                    dataZoomReset : '区域缩放后退',<br/>
-                                    dataView : '数据视图',<br/>
-                                    lineChart : '折线图切换',<br/>
-                                    barChart : '柱形图切换',<br/>
-                                    restore : '还原',<br/>
-                                    saveAsImage : '保存为图片'<br/>
-                                 } 
-                            </td>
-                            <td> 工具箱文字提示默认话术</td>
+                            <td> <b>{Object}</b> textStyle </td>
+                            <td> {} </td>
+                            <td> 工具箱提示文字样式，（详见<a href="#TextStyle" title="">textStyle</a>） </td>
                         </tr>
                         <tr>
-                            <td> <b>{Object}</b> featureImageIcon </td>
-                            <td> {} 
-                            </td>
-                            <td> 工具箱自定义图标，格式同featureTitle，传入图片地址（路径）</td>
+                            <td> <b>{Object}</b> feature </td>
+                            <td><pre>{
+    mark : {
+        show : false,
+        title : {
+            mark : '辅助线开关',
+            markUndo : '删除辅助线',
+            markClear : '清空辅助线'
+        },
+        lineStyle : {
+            width : 2,
+            color : '#1e90ff',
+            type : 'dashed'
+        }
+    },
+    dataZoom : {
+        show : false,
+        title : {
+            dataZoom : '区域缩放',
+            dataZoomReset : '区域缩放后退'
+        }
+    },
+    dataView : {
+        show : false,
+        title : '数据视图',
+        readOnly: false,
+        lang : ['Data View', 'close', 'refresh']
+    },
+    magicType: {
+        show : false,
+        title : {
+            line : '折线图切换',
+            bar : '柱形图切换',
+            stack : '堆叠',
+            tiled : '平铺'
+        },
+        type : []
+    },
+    restore : {
+        show : false,
+        title : '还原'
+    },
+    saveAsImage : {
+        show : false,
+        title : '保存为图片',
+        type : 'png',
+        lang : ['点击保存'] 
+    }
+} 
+                              </pre></td>
+                            <td> 启用功能，目前支持feature见下，工具箱自定义功能回调处理，见<a href="example/toolbox.html" target="_blank">try this »</a></td>
                         </tr>
                     </table>
                     <p><img src="./asset/img/doc/toolbox.png" title="" alt="工具箱"/></P>
                     <div class="code">
                     <pre>
 feature : {
-    mark : true,                    // 辅助线标志，上图icon左数1/2/3，分别是启用，删除上一条，删除全部
-    dataZoom : true,                // 框选区域缩放，自动与存在的dataZoom控件同步，上图icon左数4/5，分别是启用，缩放后退
-    magicType:['line', 'bar'],      // 图表类型切换，当前仅支持直角系下的折线图、柱状图转换，上图icon左数6/7，分别是切换折线图，切换柱形图
-    dataView : true,                // 数据视图，上图icon左数8，打开数据视图
-    restore : true                  // 还原，复位原始图表，上图icon左数9，还原
-    saveAsImage : true              // 保存为图片，上图icon左数10，保存
+    mark : {show : true},                    // 辅助线标志，上图icon左数1/2/3，分别是启用，删除上一条，删除全部
+    dataZoom : {show : true},                // 框选区域缩放，自动与存在的dataZoom控件同步，上图icon左数4/5，分别是启用，缩放后退
+    
+    // 动态类型切换，支持直角系下的折线图、柱状图、堆叠、平铺转换，上图icon左数6/7/8/9，分别是切换折线图，切换柱形图，切换为堆叠，切换为平铺
+    magicType : {
+        show : true,
+        type : ['line', 'bar', 'stack', 'tiled'] 
+    },
+    
+    dataView : {show : true},                // 数据视图，上图icon左数10，打开数据视图
+    restore : {show : true},                  // 还原，复位原始图表，上图icon左数11，还原
+    saveAsImage : {show : true}              // 保存为图片，上图icon左数12，保存
 }
                     </pre>
                     </div>
@@ -1140,45 +1241,36 @@ feature : {
                         <li>
                             mark，辅助线标志
                             <ul>
-                                <li>简单传入true启动辅助线标志功能</li>
-                                <li>传入lineStyle（详见<a href="#LineStyle" title="">lineStyle</a>）控制线条样式</li>
+                                <li>可传入lineStyle（详见<a href="#LineStyle" title="">lineStyle</a>）控制线条样式</li>
                             </ul>
                         </li>
                         <li>
-                            dataView，数据视图
+                            dataView，数据视图，可设置更多属性
                             <ul>
-                                <li>简单传入true启动数据视图</li>
-                                <li>传入<b>{Object}</b>设置更多属性</li>
-                                <ul>
-                                    <li>{boolean=} readOnly 默认数据视图为只读，可指定readOnly为false打开编辑功能</li>
-                                    <li>{Function=} optionToContent 自主编排数据视图的显示内容</li>
-                                    <li>{Function=} contentToOption 当数据视图readOnly为false时，会出现刷新按钮，如果是自主编排的显示内容，如何翻转也请自理</li>
-                                    <li>{Array=} lang 数据视图上有三个话术，默认是['Data View', 'close', 'refresh']，如需改写，可自定义</li>
-                                </ul>
+                                <li><b>{boolean=}</b> readOnly 默认数据视图为只读，可指定readOnly为false打开编辑功能</li>
+                                <li><b>{Function=}</b> optionToContent 自主编排数据视图的显示内容</li>
+                                <li><b>{Function=}</b> contentToOption 当数据视图readOnly为false时，会出现刷新按钮，如果是自主编排的显示内容，如何翻转也请自理</li>
+                                <li><b>{Array=}</b> lang 数据视图上有三个话术，默认是['Data View', 'close', 'refresh']，如需改写，可自定义</li>
                             </ul>
                         </li>
                         <li>
-                            magicType，图表类型切换，当前仅支持直角系下的折线图、柱状图转换
+                            magicType，图表类型切换，支持直角系下的折线图、柱状图、堆叠、平铺转换
                             <ul>
-                                <li>['line', 'bar']</li>
+                                <li><b>{Array}</b> type ['line', 'bar', 'stack', 'tiled'] </li>
                             </ul>
                         </li>
                         <li>
-                            saveAsImage，保存图片（IE8-不支持）
+                            saveAsImage，保存图片（IE8-不支持），可设置更多属性
                             <ul>
-                                <li>简单传入true启动保存功能</li>
-                                <li>传入<b>{Object}</b>设置更多属性</li>
-                                <ul>
-                                    <li>{string=} type 默认保存图片类型为'png'，需改为'jpeg'</li>
-                                    <li>{string=} name 指定图片名称，如不指定，则用图表title标题，如无title标题则图片名称默认为“ECharts”</li>
-                                    <li>{string=} lang 非IE浏览器支持点击下载，有保存话术，默认是“点击保存”，可修改</li>
-                                </ul>
+                                <li><b>{string=}</b> type 默认保存图片类型为'png'，需改为'jpeg'</li>
+                                <li><b>{string=}</b> name 指定图片名称，如不指定，则用图表title标题，如无title标题则图片名称默认为“ECharts”</li>
+                                <li><b>{string=}</b> lang 非IE浏览器支持点击下载，有保存话术，默认是“点击保存”，可修改</li>
                             </ul>
                         </li>
                     </ul>
 
                     <h4>tooltip<a name="Tooltip"> </a></h4>
-                    <P> 提示框,鼠标悬浮交互时的信息提示。<a href="example/tooltip.html" target="_blank">try this »</a></P>
+                    <P> 提示框，鼠标悬浮交互时的信息提示。<a href="example/tooltip.html" target="_blank">try this »</a></P>
                     <table cellspacing="0" class="ADoc_table full">
                         <tr>
                             <th> 名称 </th>
@@ -1186,12 +1278,12 @@ feature : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> true </td>
                             <td> 显示策略，可选为：true（显示） | false（隐藏） </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> showContent </td>
+                            <td> <b>{boolean}</b> showContent </td>
                             <td> true </td>
                             <td> tooltip主体内容显示策略，只需tooltip触发事件或显示axisPointer而不需要显示内容时可配置该项为falase，<br/>可选为：true（显示） | false（隐藏） </td>
                         </tr>
@@ -1280,17 +1372,13 @@ feature : {
                                     <ul>
                                         <li>折线（区域）图、柱状（条形）图: a（系列名称），b（类目值），c（数值）, d（无）</li>
                                         <li>散点图（气泡）图 : a（系列名称），b（数据名称），c（数值数组）, d（无）</li>
+                                        <li>地图: a（系列名称），b（区域名称），c（数值）, d（无）</li>
                                         <li>饼图、雷达图 : a（系列名称），b（数据项名称），c（数值）, d（百分比）</li>
                                         <li>弦图 : a（系列名称），b（项1名称），c（项1-项2值），d（项2名称)， e(项2-项1值)</li>
-                                        <li>
-                                            力导向图 : 
+                                        <li>力导向图 : 
                                             <ul>
-                                                <li>
-                                                    节点 : a（类目名称），b（节点名称），c（节点值）
-                                                </li>
-                                                <li>
-                                                    边 : a（系列名称），b（源名称-目标名称），c（边权重）， d（如果为true的话则数据来源是边）
-                                                </li>
+                                                <li>节点 : a（类目名称），b（节点名称），c（节点值）</li>
+                                                <li>边 : a（系列名称），b（源名称-目标名称），c（边权重）， d（如果为true的话则数据来源是边）</li>
                                         </li>
                                     </ul>
                                 </li>
@@ -1326,7 +1414,7 @@ feature : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> false </td>
                             <td> 是否显示，当show为true时则接管使用指定类目轴的全部系列数据，如不指定则接管全部直角坐标系数据。 </td>
                         </tr>
@@ -1396,12 +1484,12 @@ feature : {
                             <td> 数据缩放，选择结束比例，默认为100（%），到最后一个数据选择结束。 </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> realtime </td>
+                            <td> <b>{boolean}</b> realtime </td>
                             <td> false </td>
                             <td> 缩放变化是否实时显示，建议性能较低的浏览器或数据量巨大时不启动实时效果。 </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> zoomLock </td>
+                            <td> <b>{boolean}</b> zoomLock </td>
                             <td> false </td>
                             <td> 数据缩放锁，默认为false，当设置为true时选择区域不能伸缩，即(end - start)值保持不变，仅能做数据漫游。</td>
                         </tr>
@@ -1517,7 +1605,7 @@ feature : {
                             <td> 坐标轴名称文字样式，默认取全局配置，颜色跟随axisLine主色，可设</td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> boundaryGap </td>
+                            <td> <b>{boolean}</b> boundaryGap </td>
                             <td> true </td>
                             <td> 类目型 </td>
                             <td> 类目起始和结束两端空白策略，见下图，默认为true留空，false则顶头 </td>
@@ -1541,7 +1629,7 @@ feature : {
                             <td> 指定的最大值，eg: 100，默认无，会自动根据具体数值调整，指定后将忽略boundaryGap[1] </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> scale </td>
+                            <td> <b>{boolean}</b> scale </td>
                             <td> false </td>
                             <td> 数值型 </td>
                             <td> 脱离0值比例，放大聚焦到最终_min，_max区间 </td>
@@ -1642,7 +1730,7 @@ feature : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> true </td>
                             <td> 通用 </td>
                             <td> 是否显示，默认为true，设为false后下面都没意义了 </td>
@@ -1665,7 +1753,7 @@ feature : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> false </td>
                             <td> 通用 </td>
                             <td> 是否显示，默认为false，设为true后下面为默认样式 </td>
@@ -1681,6 +1769,12 @@ feature : {
                             <td> null </td>
                             <td> 类目型 </td>
                             <td> 小标记是否显示为间隔，默认等于boundaryGap</td>
+                        </tr>
+                        <tr>
+                            <td> <b>{boolean}</b> inside </td>
+                            <td> false </td>
+                            <td> 通用 </td>
+                            <td> 小标记是否显示为在grid内部，默认在外部</td>
                         </tr>
                         <tr>
                             <td> <b>{number}</b> length </td>
@@ -1706,7 +1800,7 @@ feature : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> true </td>
                             <td> 通用 </td>
                             <td> 是否显示，默认为true，设为false后下面都没意义了 </td>
@@ -1739,7 +1833,7 @@ feature : {
                             <td> <b>{Object}</b> textStyle </td>
                             <td> {color: '#333'} </td>
                             <td> 通用 </td>
-                            <td> 文本样式（详见<a href="#TextStyle" title="">textStyle</a>） </td>
+                            <td> 文本样式（详见<a href="#TextStyle" title="">textStyle</a>），其中当坐标轴为数值型时，color接受方法回调，实现个性化的颜色定义，support <a href="https://github.com/ecomfe/echarts/issues/226" target="_blank">#226 »</a> </td>
                         </tr>
                     </table>
                     <P> 间隔名称格式器formatter：</P>
@@ -1775,7 +1869,7 @@ feature : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> true </td>
                             <td> 通用 </td>
                             <td> 是否显示，默认为true，设为false后下面都没意义了 </td>
@@ -1804,7 +1898,7 @@ feature : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> false </td>
                             <td> 通用 </td>
                             <td> 是否显示，默认为false，设为true后带如下默认样式 </td>
@@ -1884,7 +1978,7 @@ feature : {
                             <td> 数值轴两端空白策略，数组内数值代表百分比，[原始数据最小值与最终最小值之间的差额，原始数据最大值与最终最大值之间的差额] </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> scale </td>
+                            <td> <b>{boolean}</b> scale </td>
                             <td> false </td>
                             <td> 脱离0值比例，放大聚焦到最终_min，_max区间 </td>
                         </tr>
@@ -2045,13 +2139,13 @@ indicator : [
                             <td> 标志图形旋转角度[-180,180]</td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> showAllSymbol </td>
+                            <td> <b>{boolean}</b> showAllSymbol </td>
                             <td> false </td>
                             <td> 折线图  </td>
                             <td> 标志图形默认只有主轴显示（随主轴标签间隔隐藏策略），如需全部显示可把showAllSymbol设为true</td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> smooth </td>
+                            <td> <b>{boolean}</b> smooth </td>
                             <td> false </td>
                             <td> 折线图  </td>
                             <td> 平滑曲线显示</td>
@@ -2105,7 +2199,7 @@ indicator : [
                             <td> 选中是扇区偏移量 </td>
                         </tr>
                         <tr>
-                            <td> <b>{string}</b> selectedMode </td>
+                            <td> <b>{boolean | string}</b> selectedMode </td>
                             <td> null </td>
                             <td> 饼图，地图 </td>
                             <td> 选中模式，默认关闭，可选single，multiple </td>
@@ -2123,7 +2217,7 @@ indicator : [
                             </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> hoverable </td>
+                            <td> <b>{boolean}</b> hoverable </td>
                             <td> true </td>
                             <td> 地图 </td>
                             <td> 非数值显示（如仅用于显示标注标线时），可以通过hoverable:false关闭区域悬浮高亮 </td>
@@ -2237,21 +2331,21 @@ indicator : [
                             <td> 数据排序（弦）， 可以取none, ascending, descending</td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> showScale </td>
+                            <td> <b>{boolean}</b> showScale </td>
                             <td> false </td>
                             <td> 弦图 </td>
                             <td> 是否显示刻度 </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> showScaleText </td>
+                            <td> <b>{boolean}</b> showScaleText </td>
                             <td> false </td>
                             <td> 弦图 </td>
                             <td> 是否显示刻度文字 </td>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> clockWise </td>
+                            <td> <b>{boolean}</b> clockWise </td>
                             <td> false </td>
-                            <td> 弦图 </td>
+                            <td> 饼图，弦图 </td>
                             <td> 显示是否顺时针 </td>
                         </tr>
                         <tr>
@@ -2376,7 +2470,28 @@ indicator : [
                             <td> 标注图形旋转角度，同series中的<a href="#Series">symbolRotate</a> </td>
                         </tr>
                         <tr>
-                            <td> <b>{number}</b> itemStyle </td>
+                            <td> <b>{Object}</b> effect </td>
+                            <td> {
+                                <br/>show: false,
+                                <br/>period: 15,
+                                <br/>scaleSize : 2,
+                                <br/>color : null,
+                                <br/>shadowColor : null,
+                                <br/>shadowBlur : 0
+                                <br/>}
+                            </td>
+                            <td> 标注图形炫光特效:
+                                <br/>show 是否开启，默认关闭
+                                <br/>period 运动周期，无单位，值越大越慢，默认为15
+                                <br/>scaleSize 放大倍数，以markPoint symbolSize为基准
+                                <br/>color 炫光颜色，默认跟随markPoint itemStyle定义颜色,
+                                <br/>shadowColor 光影颜色，默认跟随color
+                                <br/>shadowBlur 光影模糊度，默认为0
+                                <br/><a href="./example/map11.html" target="_blank">百度迁徙（模拟） »</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td> <b>{Object}</b> itemStyle </td>
                             <td> {...} </td>
                             <td> 标注图形样式属性，同series中的<a href="#Series">itemStyle</a> </td>
                         </tr>
@@ -2408,6 +2523,13 @@ indicator : [
     {name: '标注2', value: 100, xAxis: '周三', yAxis: 20}, // 当xAxis为类目轴时，字符串'周三'会被理解为与类目轴的文本进行匹配
     {name: '标注3', value: 200, xAxis: 10, yAxis: 20},     // 当xAxis或yAxis为数值轴时，不管传入是什么，都被理解为数值后做空间位置换算
     ...
+]</pre>
+                    </div>
+                    <P> 更为实用的，在折线、柱形、散点图中，可以直接使用如下几个开箱即用的特殊点标注</P>
+                    <div class="code">
+                        <pre>data : [
+    {type : 'max', name: '自定义名字'},    // 最大值
+    {type : 'min', name: '自定义名字'}     // 最小值
 ]</pre>
                     </div>
                     <P> 标注数据比较特殊也最为常用的地图上，除了直接位置定位外，如果希望基于地理坐标标注，并且能够随地图漫游缩放，需要为markPoint提供一份geoCoord，如下</P>
@@ -2449,7 +2571,28 @@ geoCoord : {
                             <td> 标线起始和结束的symbol旋转控制，同series中的<a href="#Series">symbolRotate</a> </td>
                         </tr>
                         <tr>
-                            <td> <b>{number}</b> itemStyle </td>
+                            <td> <b>{Object}</b> effect </td>
+                            <td> {
+                                <br/>show: false,
+                                <br/>period: 15,
+                                <br/>scaleSize : 2,
+                                <br/>color : null,
+                                <br/>shadowColor : null,
+                                <br/>shadowBlur : null
+                                <br/>}
+                            </td>
+                            <td> 标线图形炫光特效:
+                                <br/>show 是否开启，默认关闭
+                                <br/>period 运动周期，无单位，值越大越慢，默认为15
+                                <br/>scaleSize 放大倍数，以markLine lineWidth为基准
+                                <br/>color 炫光颜色，默认跟随markLine itemStyle定义颜色,
+                                <br/>shadowColor 光影颜色，默认跟随color
+                                <br/>shadowBlur 光影模糊度，默认根据scaleSize计算
+                                <br/><a href="./example/map11.html" target="_blank">百度迁徙（模拟） »</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td> <b>{Object}</b> itemStyle </td>
                             <td> {...} </td>
                             <td> 标线图形样式属性，同series中的<a href="#Series">itemStyle</a> </td>
                         </tr>
@@ -2494,6 +2637,22 @@ geoCoord : {
     ...
 ]</pre>
                     </div>
+                    <P> 更为实用的，在折线、柱形、散点图中，可以直接使用如下几个开箱即用的特殊点作为标线类型</P>
+                    <div class="code">
+                        <pre>data : [
+    {type : 'max', name: '自定义名字'},    // 最大值水平线或垂直线
+    {type : 'min', name: '自定义名字'},    // 最小值水平线或垂直线
+    {type : 'average', name: '自定义名字'},// 平均值水平线或垂直线
+    
+    // 最小值指向最大值的连线
+    [
+        {type : 'min', name: '自定义名字'},
+        {type : 'max', name: '自定义名字'}
+    ],
+    
+    // 散点图中存在两个数值型坐标，默认用纵轴值计算特殊点，可以通过valueIndex:0指定为横轴特殊点
+    {type : 'max', name: '自定义名字', valueIndex:0} 
+]</pre>
                     <P> 标线数据比较特殊也最为常用的地图上，除了直接位置定位外，如果希望基于地理坐标标线，并且能够随地图漫游缩放，需要为markLine提供一份geoCoord，如下</P>
                     <div class="code">
                         <pre>data : [
@@ -2602,7 +2761,7 @@ geoCoord : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> true </td>
                             <td> 标签显示策略，可选为：true（显示） | false（隐藏） </td>
                         </tr>
@@ -2617,7 +2776,7 @@ geoCoord : {
                         <tr>
                             <td> <b>{string | Function}</b> formatter </td>
                             <td> null </td>
-                            <td> 标签文本格式器，仅饼图支持，同<a href="#Tooltip" title="">Tooltip.formatter</a>，不支持回调</td>
+                            <td> 标签文本格式器，通用，同<a href="#Tooltip" title="">Tooltip.formatter</a>，支持模板、方法回调，不支持异步回调</td>
                         </tr>
                         <tr>
                             <td> <b>{Object}</b> textStyle </td>
@@ -2633,7 +2792,7 @@ geoCoord : {
                             <th> 描述 </th>
                         </tr>
                         <tr>
-                            <td> <b>{Boolean}</b> show </td>
+                            <td> <b>{boolean}</b> show </td>
                             <td> true </td>
                             <td> 饼图标签视觉引导线显示策略，可选为：true（显示） | false（隐藏） </td>
                         </tr>
@@ -2848,32 +3007,32 @@ geoCoord : {
 
                     <h4>backgroundColor<a name="BackgroundColor"> </a></h4>
                     <P>
-                        <b>{color}</b> 'rgba(0,0,0,0)'，全图默认背景
+                        <b>{color}</b> null，全图默认背景，默认为null，同'rgba(0,0,0,0)'
                     </P>
                     
                     <h4>color<a name="Color"> </a></h4>
                     <P>
                         <b>{Array}</b> [
-                        '#ff7f50', '#87cefa', '#da70d6', '#32cd32', '#6495ed', 
-                        '#ff69b4', '#ba55d3', '#cd5c5c', '#ffa500', '#40e0d0', 
-                        '#1e90ff', '#ff6347', '#7b68ee', '#00fa9a', '#ffd700', 
-                        '#6b8e23', '#ff00ff', '#3cb371', '#b8860b', '#30e0e0'
-                        ]，默认颜色序列
+                        <br/>&nbsp;&nbsp;&nbsp;&nbsp;'#ff7f50', '#87cefa', '#da70d6', '#32cd32', '#6495ed', 
+                        <br/>&nbsp;&nbsp;&nbsp;&nbsp;'#ff69b4', '#ba55d3', '#cd5c5c', '#ffa500', '#40e0d0', 
+                        <br/>&nbsp;&nbsp;&nbsp;&nbsp;'#1e90ff', '#ff6347', '#7b68ee', '#00fa9a', '#ffd700', 
+                        <br/>&nbsp;&nbsp;&nbsp;&nbsp;'#6b8e23', '#ff00ff', '#3cb371', '#b8860b', '#30e0e0'
+                        <br/>]，默认颜色序列，循环使用
                     </P>
                     
                     <h4>symbolList<a name="SymbolList"> </a></h4>
                     <P>
                         <b>{Array}</b> [
-                        'circle', 'rectangle', 'triangle', 'diamond', 
-                        'emptyCircle', 'emptyRectangle', 'emptyTriangle', 'emptyDiamond'
-                        ]，默认标志图形类型列表，循环使用
+                        <br/>&nbsp;&nbsp;&nbsp;&nbsp;'circle', 'rectangle', 'triangle', 'diamond', 
+                        <br/>&nbsp;&nbsp;&nbsp;&nbsp;'emptyCircle', 'emptyRectangle', 'emptyTriangle', 'emptyDiamond'
+                        <br/>]，默认标志图形类型列表，循环使用
                     </P>
                                 
                     <h4>renderAsImage<a name="RenderAsImage"> </a></h4>
                     <P> {boolean | string} false，非IE8-支持渲染为图片，可设为true或指定图片格式（png | jpeg），渲染为图片后实例依然可用（如setOption，resize等），但各种交互失效</P>
                     
                     <h4>calculable<a name="Calculable"> </a></h4>
-                    <P> <b>{Boolean}</b> false，是否启用拖拽重计算特性，默认关闭</P>
+                    <P> <b>{boolean}</b> false，是否启用拖拽重计算特性，默认关闭</P>
 
                     <h4>calculableColor<a name="CalculableColor"> </a></h4>
                     <P> <b>{color}</b> 'rgba(255,165,0,0.6)'，拖拽重计算提示边框颜色</P>
@@ -2888,7 +3047,13 @@ geoCoord : {
                     <P> <b>{string}</b> ' : '，数据合并名字与数值间连接符</P>
 
                     <h4>animation<a name="Animation"> </a></h4>
-                    <P> <b>{Boolean}</b> true，是否启用图表初始化动画，默认开启，建议IE8-关闭</P>
+                    <P> <b>{boolean}</b> true，是否启用图表初始化动画，默认开启，建议IE8-关闭</P>
+
+                    <h4>addDataAnimation<a name="AddDataAnimation"> </a></h4>
+                    <P> <b>{boolean}</b> true，是否启用动态数据接口动画效果，默认开启，建议IE8-关闭</P>
+                    
+                    <h4>animationThreshold<a name="AnimationThreshold"> </a></h4>
+                    <P> <b>{number}</b> 2500，动画元素阀值，产生的图形原素超过2500不出动画，建议IE8-关闭</P>
 
                     <h4>animationDuration<a name="AnimationDuration"> </a></h4>
                     <P> <b>{number}</b> 2000，动画时长，单位ms，支持多级控制</P>
@@ -2976,6 +3141,34 @@ option.series = [
                     <h4>组件实例接口<a name="附录组件实例接口"> </a></h3>
                     <p>ECharts包含组件有：title、legend、dataRange、toolbox、tooltip、dataZoom、grid、xAxis、yAxis、polar</p>
                     
+                    <h4>tooltip<a name="TooltipInterface"> </a></h4>
+                    <P>提示框，鼠标悬浮交互时的信息提示，每个图表最多仅有一个提示框。可使用的属性和方法有：</P>
+                    <table cellspacing="0" class="ADoc_table full">
+                        <tr>
+                            <th> 类型 </th>
+                            <th> 名称 </th>
+                            <th> 描述 </th>
+                        </tr>
+                        <tr>
+                            <td> <b>{string}</b></td>
+                            <td> type </td>
+                            <td> 组件类型，等于config.COMPONENT_TYPE_LEGEND </td>
+                        </tr>
+                        <tr>
+                            <td> <b>{Function}</b></td>
+                            <td> showTip</td>
+                            <td> 显示提示框。<br/>参数：<b>{Object}</b> param （见下）<br/> 返回：null
+                                <br/>参数格式：{ seriesIndex: 0, seriesName:'', dataInex:0 } // line、bar、scatter、k、radar
+                                <br/>参数格式：{ seriesIndex: 0, seriesName:'', name:'' } // map、pie、chord
+                            </td>
+                        </tr>
+                        <tr>
+                            <td> <b>{Function}</b></td>
+                            <td> hideTip</td>
+                            <td> 隐藏提示框。<br/>参数：无<br/> 返回：null</td>
+                        </tr>
+                    </table>
+                    
                     <h4>legend<a name="LegendInterface"> </a></h4>
                     <P>图例，每个图表最多仅有一个图例。可使用的属性和方法有：</P>
                     <table cellspacing="0" class="ADoc_table full">
@@ -2992,7 +3185,7 @@ option.series = [
                         <tr>
                             <td> <b>{Function}</b></td>
                             <td> isSelected</td>
-                            <td> 图例开关相关，判断传入的名称当前是否处于开启状态。<br/>参数：<b>{string}</b> name （名称）<br/> 返回：<b>{Boolean}</b> true为开启，false为关闭</td>
+                            <td> 图例开关相关，判断传入的名称当前是否处于开启状态。<br/>参数：<b>{string}</b> name （名称）<br/> 返回：<b>{boolean}</b> true为开启，false为关闭</td>
                         </tr>
                         <tr>
                             <td> <b>{Function}</b></td>

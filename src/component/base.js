@@ -8,12 +8,20 @@
 define(function(require) {
     function Base(ecConfig, zr){
         var ecData = require('../util/ecData');
+        var ecQuery = require('../util/ecQuery');
+        var number = require('../util/number');
         var zrUtil = require('zrender/tool/util');
+        var zrArea = require('zrender/tool/area');
+        //var zrColor = require('zrender/tool/color');
         var self = this;
 
         self.zr =zr;
 
         self.shapeList = [];
+        self.effectList = [];
+        
+        var EFFECT_ZLEVEL = 7;
+        var _canvasSupported = require('zrender/tool/env').canvasSupported;
         
         var _aniMap = {};
         _aniMap[ecConfig.CHART_TYPE_LINE] = true;
@@ -60,8 +68,10 @@ define(function(require) {
                 case ecConfig.COMPONENT_TYPE_TITLE :
                     return 6;
 
+                // EFFECT_ZLEVEL = 7;
+                
                 case ecConfig.COMPONENT_TYPE_TOOLTIP :
-                    return 7;
+                    return 8;
 
                 default :
                     return 0;
@@ -109,71 +119,6 @@ define(function(require) {
         }
 
         /**
-         * 获取嵌套选项的基础方法
-         * 返回optionTarget中位于optionLocation上的值，如果没有定义，则返回undefined
-         */
-        function query(optionTarget, optionLocation) {
-            if (typeof optionTarget == 'undefined') {
-                return undefined;
-            }
-            if (!optionLocation) {
-                return optionTarget;
-            }
-            optionLocation = optionLocation.split('.');
-
-            var length = optionLocation.length;
-            var curIdx = 0;
-            while (curIdx < length) {
-                optionTarget = optionTarget[optionLocation[curIdx]];
-                if (typeof optionTarget == 'undefined') {
-                    return undefined;
-                }
-                curIdx++;
-            }
-            return optionTarget;
-        }
-            
-        /**
-         * 获取多级控制嵌套属性的基础方法
-         * 返回ctrList中优先级最高（最靠前）的非undefined属性，ctrList中均无定义则返回undefined
-         */
-        function deepQuery(ctrList, optionLocation) {
-            var finalOption;
-            for (var i = 0, l = ctrList.length; i < l; i++) {
-                finalOption = query(ctrList[i], optionLocation);
-                if (typeof finalOption != 'undefined') {
-                    return finalOption;
-                }
-            }
-            return undefined;
-        }
-        
-        /**
-         * 获取多级控制嵌套属性的基础方法
-         * 根据ctrList中优先级合并产出目标属性
-         */
-        function deepMerge (ctrList, optionLocation) {
-            var finalOption;
-            var tempOption;
-            var len = ctrList.length;
-            while (len--) {
-                tempOption = query(ctrList[len], optionLocation);
-                if (typeof tempOption != 'undefined') {
-                    if (typeof finalOption == 'undefined') {
-                        finalOption = zrUtil.clone(tempOption);
-                    }
-                    else {
-                        zrUtil.merge(
-                            finalOption, tempOption,
-                            { 'overwrite': true, 'recursive': true }
-                        );
-                    }
-                }
-            }
-            return finalOption;
-        }
-
-        /**
          * 获取自定义和默认配置合并后的字体设置
          */
         function getFont(textStyle) {
@@ -194,8 +139,8 @@ define(function(require) {
         function addLabel(tarShape, serie, data, name, orient) {
             // 多级控制
             var queryTarget = [data, serie];
-            var nLabel = deepMerge(queryTarget, 'itemStyle.normal.label');
-            var eLabel = deepMerge(queryTarget, 'itemStyle.emphasis.label');
+            var nLabel = self.deepMerge(queryTarget, 'itemStyle.normal.label');
+            var eLabel = self.deepMerge(queryTarget, 'itemStyle.emphasis.label');
 
             var nTextStyle = nLabel.textStyle || {};
             var eTextStyle = eLabel.textStyle || {};
@@ -302,6 +247,15 @@ define(function(require) {
                                       ? mpData.x : pos[0];
                 markPoint.data[i].y = typeof mpData.y != 'undefined'
                                       ? mpData.y : pos[1];
+                if (mpData.type
+                    && (mpData.type == 'max' || mpData.type == 'min')
+                ) {
+                    // 特殊值内置支持
+                    markPoint.data[i].value = pos[3];
+                    markPoint.data[i].name = mpData.name || mpData.type;
+                    markPoint.data[i].symbolSize = markPoint.data[i].symbolSize
+                        || (zrArea.getTextWidth(pos[3], self.getFont()) / 2 + 5);
+                }
             }
             
             var shapeList = _markPoint(
@@ -342,14 +296,28 @@ define(function(require) {
             var markLine = zrUtil.clone(serie.markLine);
             for (var i = 0, l = markLine.data.length; i < l; i++) {
                 mlData = markLine.data[i];
-                pos = [
-                    self.getMarkCoord(
-                        serie, seriesIndex, mlData[0], markCoordParams
-                    ),
-                    self.getMarkCoord(
-                        serie, seriesIndex, mlData[1], markCoordParams
-                    )
-                ];
+                if (mlData.type
+                    && (mlData.type == 'max' || mlData.type == 'min' || mlData.type == 'average')
+                ) {
+                    // 特殊值内置支持
+                    pos = self.getMarkCoord(serie, seriesIndex, mlData, markCoordParams);
+                    markLine.data[i] = [zrUtil.clone(mlData), {}];
+                    markLine.data[i][0].name = mlData.name || mlData.type;
+                    markLine.data[i][0].value = pos[3];
+                    pos = pos[2];
+                    mlData = [{},{}];
+                }
+                else {
+                    pos = [
+                        self.getMarkCoord(
+                            serie, seriesIndex, mlData[0], markCoordParams
+                        ),
+                        self.getMarkCoord(
+                            serie, seriesIndex, mlData[1], markCoordParams
+                        )
+                    ];
+                }
+                
                 markLine.data[i][0].x = typeof mlData[0].x != 'undefined'
                                       ? mlData[0].x : pos[0][0];
                 markLine.data[i][0].y = typeof mlData[0].y != 'undefined'
@@ -404,6 +372,7 @@ define(function(require) {
             var queryTarget;
             var nColor;
             var eColor;
+            var effect;
             var zrWidth = self.zr.getWidth();
             var zrHeight = self.zr.getHeight();
             for (var i = 0, l = data.length; i < l; i++) {
@@ -434,7 +403,8 @@ define(function(require) {
                 }
                 
                 // 标准化一些参数
-                data[i].tooltip = {trigger:'item'}; // tooltip.trigger指定为item
+                data[i].tooltip = data[i].tooltip 
+                                  || {trigger:'item'}; // tooltip.trigger指定为item
                 data[i].name = typeof data[i].name != 'undefined'
                                ? data[i].name : '';
                 data[i].value = typeof data[i].value != 'undefined'
@@ -444,12 +414,20 @@ define(function(require) {
                 itemShape = getSymbolShape(
                     mpOption, seriesIndex,      // 系列 
                     data[i], i, data[i].name,   // 数据
-                    parsePercent(data[i].x, zrWidth),   // 坐标
-                    parsePercent(data[i].y, zrHeight),  // 坐标
+                    self.parsePercent(data[i].x, zrWidth),   // 坐标
+                    self.parsePercent(data[i].y, zrHeight),  // 坐标
                     'pin', color,               // 默认symbol和color
                     'rgba(0,0,0,0)',
                     'horizontal'                // 走向，用于默认文字定位
                 );
+                
+                effect = self.deepMerge(
+                    [data[i], mpOption],
+                    'effect'
+                );
+                if (effect.show) {
+                    itemShape.effect = effect;
+                }
                 
                 // 重新pack一下数据
                 ecData.pack(
@@ -503,23 +481,27 @@ define(function(require) {
             var queryTarget;
             var nColor;
             var eColor;
+            var effect;
             var zrWidth = self.zr.getWidth();
             var zrHeight = self.zr.getHeight();
+            var mergeData;
             for (var i = 0, l = data.length; i < l; i++) {
                 // 图例
                 if (legend) {
                     color = legend.getColor(serie.name);
                 }
+                // 组装一个mergeData
+                mergeData = self.deepMerge(data[i]);
                 // 值域
                 if (dataRange) {
-                    value = typeof data[i][0] != 'undefined'
-                            ? (typeof data[i][0].value != 'undefined'
-                              ? data[i][0].value
-                              : data[i][0])
+                    value = typeof mergeData != 'undefined'
+                            ? (typeof mergeData.value != 'undefined'
+                              ? mergeData.value
+                              : mergeData)
                             : '-';
                     color = isNaN(value) ? color : dataRange.getColor(value);
                     
-                    queryTarget = [data[i][0], mlOption];
+                    queryTarget = [mergeData, mlOption];
                     nColor = self.deepQuery(
                         queryTarget, 'itemStyle.normal.color'
                     ) || color;
@@ -533,7 +515,8 @@ define(function(require) {
                 }
                 
                 // 标准化一些参数
-                data[i][0].tooltip = {trigger:'item'}; // tooltip.trigger指定为item
+                data[i][0].tooltip = mergeData.tooltip 
+                                     || {trigger:'item'}; // tooltip.trigger指定为item
                 data[i][0].name = typeof data[i][0].name != 'undefined'
                                   ? data[i][0].name : '';
                 data[i][1].name = typeof data[i][1].name != 'undefined'
@@ -541,23 +524,33 @@ define(function(require) {
                 data[i][0].value = typeof data[i][0].value != 'undefined'
                                    ? data[i][0].value : '';
                 
-                // 复用getSymbolShape
                 itemShape = getLineMarkShape(
-                    mlOption,                   // markLine 
+                    mlOption,                   // markLine
+                    seriesIndex,
                     data[i],                    // 数据
-                    parsePercent(data[i][0].x, zrWidth),   // 坐标
-                    parsePercent(data[i][0].y, zrHeight),  // 坐标
-                    parsePercent(data[i][1].x, zrWidth),   // 坐标
-                    parsePercent(data[i][1].y, zrHeight),  // 坐标
-                    color               // 默认symbol和color
+                    i,
+                    self.parsePercent(data[i][0].x, zrWidth),   // 坐标
+                    self.parsePercent(data[i][0].y, zrHeight),  // 坐标
+                    self.parsePercent(data[i][1].x, zrWidth),   // 坐标
+                    self.parsePercent(data[i][1].y, zrHeight),  // 坐标
+                    color                       // 默认symbol和color
                 );
+                
+                effect = self.deepMerge(
+                    [mergeData, mlOption],
+                    'effect'
+                );
+                if (effect.show) {
+                    itemShape.effect = effect;
+                }
                 
                 // 重新pack一下数据
                 ecData.pack(
                     itemShape,
                     serie, seriesIndex,
                     data[i][0], 0,
-                    data[i][0].name + ' : ' + data[i][1].name
+                    data[i][0].name + (data[i][1].name !== '' 
+                                      ? (' > ' + data[i][1].name) : '')
                 );
                 pList.push(itemShape);
             }
@@ -571,7 +564,7 @@ define(function(require) {
         }
         
         function getSymbolShape(
-            serie, seriesIndex,    // 系列 
+            serie, seriesIndex,     // 系列 
             data, dataIndex, name,  // 数据
             x, y,                   // 坐标
             symbol, color,          // 默认symbol和color，来自legend或dataRange全局分配
@@ -602,13 +595,13 @@ define(function(require) {
             );
             var nBorderWidth = typeof normal.borderWidth != 'undefined'
                        ? normal.borderWidth
-                       : (normal.lineStyle && normal.lineStyle.width * 2);
+                       : (normal.lineStyle && normal.lineStyle.width);
             if (typeof nBorderWidth == 'undefined') {
                 nBorderWidth = 0;
             }
             var eBorderWidth = typeof emphasis.borderWidth != 'undefined'
                        ? emphasis.borderWidth
-                       : (emphasis.lineStyle && emphasis.lineStyle.width * 2);
+                       : (emphasis.lineStyle && emphasis.lineStyle.width);
             if (typeof eBorderWidth == 'undefined') {
                 eBorderWidth = nBorderWidth + 2;
             }
@@ -624,16 +617,21 @@ define(function(require) {
                     brushType : 'both',
                     color : symbol.match('empty') 
                             ? emptyColor 
-                            : (normal.color || color),
-                    strokeColor : normal.borderColor || normal.color || color,
+                            : (self.getItemStyleColor(normal.color, seriesIndex, dataIndex, data)
+                               || color),
+                    strokeColor : normal.borderColor 
+                              || self.getItemStyleColor(normal.color, seriesIndex, dataIndex, data)
+                              || color,
                     lineWidth: nBorderWidth
                 },
                 highlightStyle : {
                     color : symbol.match('empty') 
                             ? emptyColor 
-                            : (emphasis.color|| normal.color || color),
-                    strokeColor : emphasis.borderColor || normal.borderColor 
-                                  || emphasis.color || normal.color || color,
+                            : self.getItemStyleColor(emphasis.color, seriesIndex, dataIndex, data),
+                    strokeColor : emphasis.borderColor 
+                              || normal.borderColor
+                              || self.getItemStyleColor(normal.color, seriesIndex, dataIndex, data)
+                              || color,
                     lineWidth: eBorderWidth
                 },
                 clickable : true
@@ -703,8 +701,10 @@ define(function(require) {
         }
         
         function getLineMarkShape(
-            mlOption,                  // 系列 
+            mlOption,               // 系列 
+            seriesIndex,            // 系列索引
             data,                   // 数据
+            dataIndex,              // 数据索引
             xStart, yStart,         // 坐标
             xEnd, yEnd,             // 坐标
             color                   // 默认color，来自legend或dataRange全局分配
@@ -744,10 +744,12 @@ define(function(require) {
                 queryTarget,
                 'itemStyle.normal'
             );
+            normal.color = self.getItemStyleColor(normal.color, seriesIndex, dataIndex, data);
             var emphasis = self.deepMerge(
                 queryTarget,
                 'itemStyle.emphasis'
             );
+            emphasis.color = self.getItemStyleColor(emphasis.color, seriesIndex, dataIndex, data);
             
             var nlineStyle = normal.lineStyle;
             var elineStyle = emphasis.lineStyle;
@@ -769,6 +771,7 @@ define(function(require) {
             var itemShape = {
                 shape : 'markLine',
                 style : {
+                    smooth : mlOption.smooth ? 'spline' : false,
                     symbol : symbol, 
                     symbolSize : symbolSize,
                     symbolRotate : symbolRotate,
@@ -786,13 +789,13 @@ define(function(require) {
                     color : normal.color || color,
                     strokeColor : nlineStyle.color
                                   || normal.borderColor
-                                  || color
-                                  || normal.color,
+                                  || normal.color
+                                  || color,
                     lineWidth: nBorderWidth,
                     symbolBorderColor: normal.borderColor
-                                       || color
-                                       || normal.color,
-                    symbolBorder: normal.borderWidth * 2
+                                       || normal.color
+                                       || color,
+                    symbolBorder: normal.borderWidth
                 },
                 highlightStyle : {
                     shadowColor : elineStyle.shadowColor,
@@ -804,18 +807,18 @@ define(function(require) {
                                   || nlineStyle.color
                                   || emphasis.borderColor 
                                   || normal.borderColor
-                                  || color 
                                   || emphasis.color 
-                                  || normal.color,
+                                  || normal.color
+                                  || color,
                     lineWidth: eBorderWidth,
                     symbolBorderColor: emphasis.borderColor
                                        || normal.borderColor
-                                       || color
                                        || emphasis.color
-                                       || normal.color,
+                                       || normal.color
+                                       || color,
                     symbolBorder: typeof emphasis.borderWidth == 'undefined'
-                                  ? (normal.borderWidth * 2 + 2)
-                                  : (emphasis.borderWidth * 2)
+                                  ? (normal.borderWidth + 2)
+                                  : (emphasis.borderWidth)
                 },
                 clickable : true
             };
@@ -834,60 +837,12 @@ define(function(require) {
             return itemShape;
         }
         
-        /**
-         * 百分比计算
-         */
-        function parsePercent(value, maxValue) {
-            if (typeof(value) === 'string') {
-                if (_trim(value).match(/%$/)) {
-                    return parseFloat(value) / 100 * maxValue;
-                } else {
-                    return parseFloat(value);
-                }
-            } else {
-                return value;
-            }
+        function getItemStyleColor(itemColor, seriesIndex, dataIndex, data) {
+            return typeof itemColor == 'function'
+                   ? itemColor(seriesIndex, dataIndex, data) : itemColor;
+            
         }
         
-        /**
-         * 获取中心坐标
-         */ 
-        function parseCenter(center) {
-            return [
-                parsePercent(center[0], self.zr.getWidth()),
-                parsePercent(center[1], self.zr.getHeight()),
-            ];
-        }
-
-        /**
-         * 获取自适应半径
-         */ 
-        function parseRadius(radius) {
-            // 传数组实现环形图，[内半径，外半径]，传单个则默认为外半径为
-            if (!(radius instanceof Array)) {
-                radius = [0, radius];
-            }
-            var zrSize = Math.min(self.zr.getWidth(), self.zr.getHeight()) / 2;
-            return [
-                parsePercent(radius[0], zrSize),
-                parsePercent(radius[1], zrSize),
-            ];
-        }
-        
-        // 每三位默认加,格式化
-        function numAddCommas(x){
-            if (isNaN(x)) {
-                return '-';
-            }
-            x = (x + '').split('.');
-            return x[0].replace(/(\d{1,3})(?=(?:\d{3})+(?!\d))/g,'$1,') 
-                   + (x.length > 1 ? ('.' + x[1]) : '');
-        }
-        
-        function _trim(str) {
-            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-        }
-
         // 亚像素优化
         function subPixelOptimize(position, lineWidth) {
             if (lineWidth % 2 == 1) {
@@ -907,9 +862,12 @@ define(function(require) {
             if (_aniMap[self.type]) {
                 self.animationMark(ecConfig.animationDuration);
             }
+            else {
+                self.animationEffect();
+            }
         }
         
-        function animationMark(duration /*, easing*/) {
+        function animationMark(duration , easing) {
             var x;
             var y;
             for (var i = 0, l = self.shapeList.length; i < l; i++) {
@@ -931,44 +889,274 @@ define(function(require) {
                             duration,
                             {scale : [1, 1, x, y]}
                         )
-                        .start('QuinticOut');
+                        .start(easing || 'QuinticOut');
                 }
                 else if (self.shapeList[i]._mark == 'line') {
-                    zr.modShape(
-                        self.shapeList[i].id, 
-                        {
+                    if (!self.shapeList[i].style.smooth) {
+                        zr.modShape(
+                            self.shapeList[i].id, 
+                            {
+                                style : {
+                                    pointList : [
+                                        [
+                                            self.shapeList[i].style.xStart,
+                                            self.shapeList[i].style.yStart
+                                        ],
+                                        [
+                                            self.shapeList[i].style.xStart,
+                                            self.shapeList[i].style.yStart
+                                        ]
+                                    ]
+                                }
+                            },
+                            true
+                        );
+                        zr.animate(self.shapeList[i].id, 'style')
+                            .when(
+                                duration,
+                                {
+                                    pointList : [
+                                        [
+                                            self.shapeList[i].style.xStart,
+                                            self.shapeList[i].style.yStart
+                                        ],
+                                        [
+                                            x, y
+                                        ]
+                                    ]
+                                }
+                            )
+                            .start(easing || 'QuinticOut');
+                    }
+                    else {
+                        // 曲线动画
+                        zr.modShape(
+                            self.shapeList[i].id, 
+                            {
+                                style : {
+                                    pointListLength : 1
+                                }
+                            },
+                            true
+                        );
+                        zr.animate(self.shapeList[i].id, 'style')
+                            .when(
+                                duration,
+                                {
+                                    pointListLength : self.shapeList[i].style.pointList.length
+                                }
+                            )
+                            .start(easing || 'QuinticOut');
+                    }
+                }
+            }
+            self.animationEffect();
+        }
+
+        function animationEffect() {
+            clearAnimationShape();
+            var zlevel = EFFECT_ZLEVEL;
+            if (_canvasSupported) {
+                zr.modLayer(
+                    zlevel,
+                    {
+                        motionBlur : true,
+                        lastFrameAlpha : 0.95
+                    }
+                );
+            }
+            
+            var color;
+            var shadowColor;
+            var size;
+            var effect;
+            for (var i = 0, l = self.shapeList.length; i < l; i++) {
+                shape = self.shapeList[i];
+                if (!shape._mark || !shape.effect || !shape.effect.show) {
+                    continue;
+                }
+                //console.log(shape)
+                effect = shape.effect;
+                color = effect.color || shape.style.strokeColor || shape.style.color;
+                shadowColor = effect.shadowColor || color;
+                var effectShape;
+                var Offset;
+                switch (shape._mark) {
+                    case 'point':
+                        size = effect.scaleSize;
+                        shadowBlur = typeof effect.shadowBlur != 'undefined'
+                                     ? effect.shadowBlur : size;
+                        effectShape = {
+                            shape : shape.shape,
+                            id : zr.newShapeId(),
+                            zlevel : zlevel,
                             style : {
-                                xEnd : self.shapeList[i].style.xStart,
-                                yEnd : self.shapeList[i].style.yStart
-                            }
+                                brushType : 'stroke',
+                                iconType : (shape.style.iconType != 'pin' 
+                                            && shape.style.iconType != 'droplet')
+                                           ? shape.style.iconType
+                                           : 'circle',
+                                x : shadowBlur + 1, // 线宽
+                                y : shadowBlur + 1,
+                                n : shape.style.n,
+                                width : shape.style.width * size,
+                                height : shape.style.height * size,
+                                lineWidth : 1,
+                                strokeColor : color,
+                                shadowColor : shadowColor,
+                                shadowBlur : shadowBlur
+                            },
+                            draggable : false,
+                            hoverable : false
+                        };
+                        if (_canvasSupported) {  // 提高性能，换成image
+                            effectShape.style.image = zr.shapeToImage(
+                                effectShape, 
+                                effectShape.style.width + shadowBlur * 2 + 2, 
+                                effectShape.style.height + shadowBlur * 2 + 2
+                            ).style.image;
+                            effectShape.shape = 'image';
+                        }
+                        Offset = (effectShape.style.width - shape.style.width) / 2;
+                        break; 
+                    case 'line':
+                        size = shape.style.lineWidth * effect.scaleSize;
+                        shadowBlur = typeof effect.shadowBlur != 'undefined'
+                                     ? effect.shadowBlur : size;
+                        effectShape = {
+                            shape : 'circle',
+                            id : zr.newShapeId(),
+                            zlevel : zlevel,
+                            style : {
+                                x : shadowBlur,
+                                y : shadowBlur,
+                                r : size,
+                                color : color,
+                                shadowColor : shadowColor,
+                                shadowBlur : shadowBlur
+                            },
+                            draggable : false,
+                            hoverable : false
+                        };
+                        if (_canvasSupported) {  // 提高性能，换成image
+                            effectShape.style.image = zr.shapeToImage(
+                                effectShape, 
+                                (size + shadowBlur) * 2,
+                                (size + shadowBlur) * 2
+                            ).style.image;
+                            effectShape.shape = 'image';
+                            Offset = shadowBlur;
+                        }
+                        else {
+                             Offset = 0;
+                        }
+                        break;
+                }
+                
+                var duration;
+                // 改变坐标
+                effectShape.position = shape.position;
+                if (shape._mark === 'point') {
+                    effectShape.style.x = shape.style.x - Offset;
+                    effectShape.style.y = shape.style.y - Offset;
+                    duration = (effect.period + Math.random() * 10) * 100;
+                }
+                else if (shape._mark === 'line') {
+                    effectShape.style.x = shape.style.xStart - Offset;
+                    effectShape.style.y = shape.style.yStart - Offset;
+                    var distance = 
+                        (shape.style.xStart - shape._x) * (shape.style.xStart - shape._x)
+                        +
+                        (shape.style.yStart - shape._y) * (shape.style.yStart - shape._y);
+                    duration = Math.round(Math.sqrt(Math.round(
+                                   distance * effect.period * effect.period
+                               )));
+                }
+                
+                self.effectList.push(effectShape);
+                zr.addShape(effectShape);
+                
+                if (shape._mark === 'point') {
+                    zr.modShape(
+                        shape.id, 
+                        { invisible : true},
+                        true
+                    );
+                    var centerX = effectShape.style.x + (effectShape.style.width) /2;
+                    var centerY = effectShape.style.y + (effectShape.style.height) / 2;
+                    zr.modShape(
+                        effectShape.id, 
+                        {
+                            scale : [0.1, 0.1, centerX, centerY]
                         },
                         true
                     );
-                    zr.animate(self.shapeList[i].id, 'style')
+                    
+                    zr.animate(effectShape.id, '', true)
                         .when(
                             duration,
                             {
-                                xEnd : x,
-                                yEnd : y
+                                scale : [1, 1, centerX, centerY]
                             }
                         )
-                        .start('QuinticOut');
+                        .start();
+                }
+                else if (shape._mark === 'line') {
+                    if (!shape.style.smooth) {
+                        // 直线
+                        zr.animate(effectShape.id, 'style', true)
+                            .when(
+                                duration,
+                                {
+                                    x : shape._x - Offset,
+                                    y : shape._y - Offset
+                                }
+                            )
+                            .start();
+                    }
+                    else {
+                        // 曲线
+                        var pointList = shape.style.pointList;
+                        var len = pointList.length;
+                        duration = Math.round(duration / len);
+                        var deferred = zr.animate(effectShape.id, 'style', true);
+                        for (var j = 0; j < len; j++) {
+                            deferred.when(
+                                duration * (j + 1),
+                                {
+                                    x : pointList[j][0] - Offset,
+                                    y : pointList[j][1] - Offset
+                                }
+                            );
+                        }
+                        deferred.start();
+                    }
                 }
             }
         }
-
+        
         function resize() {
             self.refresh && self.refresh();
         }
 
+        function clearAnimationShape() {
+            if (self.zr && self.effectList.length > 0) {
+                self.zr.modLayer(
+                    EFFECT_ZLEVEL, 
+                    { motionBlur : false}
+                );
+                self.zr.delShape(self.effectList);
+            }
+            self.effectList = [];
+        }
+        
         /**
          * 清除图形数据，实例仍可用
          */
         function clear() {
+            clearAnimationShape();
             if (self.zr) {
                 self.zr.delShape(self.shapeList);
-                self.zr.clearAnimation 
-                    && self.zr.clearAnimation();
             }
             self.shapeList = [];
         }
@@ -979,6 +1167,7 @@ define(function(require) {
         function dispose() {
             self.clear();
             self.shapeList = null;
+            self.effectList = null;
             self = null;
         }
 
@@ -988,22 +1177,29 @@ define(function(require) {
         self.getZlevelBase = getZlevelBase;
         self.reformOption = reformOption;
         self.reformCssArray = reformCssArray;
-        self.query = query;
-        self.deepQuery = deepQuery;
-        self.deepMerge = deepMerge;
+        
+        self.query = ecQuery.query;
+        self.deepQuery = ecQuery.deepQuery;
+        self.deepMerge = ecQuery.deepMerge;
+        
         self.getFont = getFont;
         self.addLabel = addLabel;
         self.buildMark = buildMark;
         self.getMarkCoord = getMarkCoord;
         self.getSymbolShape = getSymbolShape;
-        self.parsePercent = parsePercent;
-        self.parseCenter = parseCenter;
-        self.parseRadius = parseRadius;
-        self.numAddCommas = numAddCommas;
+        
+        self.parsePercent = number.parsePercent;
+        self.parseCenter = number.parseCenter;
+        self.parseRadius = number.parseRadius;
+        self.numAddCommas = number.addCommas;
+        
+        self.getItemStyleColor = getItemStyleColor;
         self.subPixelOptimize = subPixelOptimize;
         self.animation = animation;
         self.animationMark = animationMark;
+        self.animationEffect = animationEffect;
         self.resize = resize;
+        self.clearAnimationShape = clearAnimationShape;
         self.clear = clear;
         self.dispose = dispose;
     }

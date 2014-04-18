@@ -77,11 +77,11 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataZoom : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataZoom : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     xAxis : [
@@ -108,7 +108,7 @@ option = {
             large: true,
             data: (function() {
                 var d = [];
-                var len = 5000;
+                var len = 10000;
                 var x = 0;
                 while (len--) {
                     x = (Math.random() * 10).toFixed(3) - 0;
@@ -128,7 +128,7 @@ option = {
             large: true,
             data: (function() {
                 var d = [];
-                var len = 5000;
+                var len = 10000;
                 var x = 0;
                 while (len--) {
                     x = (Math.random() * 10).toFixed(3) - 0;

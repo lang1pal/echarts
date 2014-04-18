@@ -75,11 +75,11 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            magicType:['line', 'bar'],
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            magicType : {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     calculable : true,
@@ -270,11 +270,11 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            magicType:['line', 'bar'],
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            magicType : {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     calculable : true,
@@ -410,9 +410,9 @@ option = {
             markLine : {
                 data : [
                     [
-                        {name : '周最低', value : 620, xAxis: '周一', yAxis: 620},
-                        {name : '周最高', value : 930, xAxis: '周六', yAxis: 930}
-                        
+                        {type : 'average', name : '平均值'},
+                        {type : 'max'},
+                        {type : 'min'}
                     ]
                 ]
             }
@@ -448,10 +448,10 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     calculable : true,
@@ -489,7 +489,7 @@ option = {
                     label : {show: true}
                 },
                 emphasis: {
-                    color: 'lightgreen',
+                    color: 'lightgreen'
                 }
             },
             data: (function() {
@@ -593,11 +593,11 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataZoom : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataZoom : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     dataZoom : {
@@ -672,11 +672,11 @@ option = {
                             color0: 'blue',         // 阴线填充颜色
                             lineStyle: {
                                 width: 3,
-                                color0: 'blue',     // 阴线边框颜色
+                                color0: 'blue'      // 阴线边框颜色
                             }
                         },
                         emphasis: {
-                            color0: 'blue',         // 阴线填充颜色
+                            color0: 'blue'          // 阴线填充颜色
                         }
                     }
                 },
@@ -813,10 +813,10 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     calculable : true,
@@ -830,34 +830,24 @@ option = {
                 normal : {
                     label : {
                         position : 'inner',
-                        formatter : function(a,b,c,d) {return (d - 0).toFixed(0) + ' %'},
+                        formatter : function(a,b,c,d) {return (d - 0).toFixed(0) + '%'}
                     },
                     labelLine : {
                         show : false
                     }
+                },
+                emphasis : {
+                    label : {
+                        show : true,
+                        formatter : "{b}\n{d}%"
+                    }
                 }
+                
             },
             data:[
                 {value:335, name:'直达'},
                 {value:679, name:'营销广告'},
-                {
-                    value:1548,
-                    name:'搜索引擎',
-                    itemStyle : {
-                        normal : {
-                            label : {
-                                show : false
-                            }
-                        },
-                        emphasis : {
-                            label : {
-                                show : true,
-                                formatter : "{b} : {d}%",
-                                position : 'inner'
-                            }
-                        }
-                    }
-                }
+                {value:1548, name:'搜索引擎'}
             ]
         },
         {
@@ -1012,10 +1002,10 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     polar : [
@@ -1262,14 +1252,14 @@ option = {
                             color: 'rgba(255,30,30,0.5)',
                             lineStyle : {
                                 width: 1,
-                                color: 'green',
+                                color: 'green'
                             }
                         },
                         emphasis: {
                             color: 'yellow',
                             lineStyle : {
                                 width: 2,
-                                color: 'blue',
+                                color: 'blue'
                             }
                         }
                     }
@@ -1461,31 +1451,17 @@ option = {
             selectedMode: 'multiple',
             itemStyle: {
                 normal: {
-                    lineStyle: {
-                        width: 2,
-                        color: '#b88608'
-                    },
-                    areaStyle: {
-                        color: (function(){
-                            var zrColor = require('zrender/tool/color');
-                            return zrColor.getLinearGradient(
-                                0, 0, 500, 500,
-                                [[0, '#32cd32'],[0.5, '#afdd00'],[1, '#ffff77']]
-                            )
-                        })()
-                    },
+                    borderWidth:2,
+                    borderColor:'lightgreen',
+                    color: 'orange',
                     label: {
                         show: false
                     }
                 },
                 emphasis: {                 // 也是选中样式
-                    lineStyle: {
-                        width: 2,
-                        color: '#fff'
-                    },
-                    areaStyle: {
-                        color: '#32cd32'
-                    },
+                    borderWidth:2,
+                    borderColor:'#fff',
+                    color: '#32cd32',
                     label: {
                         show: true,
                         textStyle: {
@@ -1496,17 +1472,11 @@ option = {
             },
             data:[
                  {
-                     name: '内蒙古',
+                     name: '广东',
                      value: Math.round(Math.random()*1000),
                      itemStyle: {
                         normal: {
-                            lineStyle: {
-                                width: 2,
-                                color: 'blue'
-                            },
-                            areaStyle: {
-                                color: '#ff7d00'
-                            },
+                            color: '#32cd32',
                             label: {
                                 show: true,
                                 textStyle: {
@@ -1516,13 +1486,9 @@ option = {
                             }
                         },
                         emphasis: {                 // 也是选中样式
-                            lineStyle: {
-                                width: 2,
-                                color: '#fff'
-                            },
-                            areaStyle: {
-                                color: '#cd5c5c'
-                            },
+                            borderWidth:5,
+                            borderColor:'yellow',
+                            color: '#cd5c5c',
                             label: {
                                 show: false,
                                 textStyle: {
@@ -1530,41 +1496,8 @@ option = {
                                 }
                             }
                         }
-                    },
-                },
-                {name: '北京',value: Math.round(Math.random()*1000)},
-                {name: '天津',value: Math.round(Math.random()*1000)},
-                {name: '上海',value: Math.round(Math.random()*1000)},
-                {name: '重庆',value: Math.round(Math.random()*1000)},
-                {name: '河北',value: Math.round(Math.random()*1000)},
-                {name: '河南',value: Math.round(Math.random()*1000)},
-                {name: '云南',value: Math.round(Math.random()*1000)},
-                {name: '辽宁',value: Math.round(Math.random()*1000)},
-                {name: '黑龙江',value: Math.round(Math.random()*1000)},
-                {name: '湖南',value: Math.round(Math.random()*1000)},
-                {name: '安徽',value: Math.round(Math.random()*1000)},
-                {name: '山东',value: Math.round(Math.random()*1000)},
-                {name: '江苏',value: Math.round(Math.random()*1000)},
-                {name: '浙江',value: Math.round(Math.random()*1000)},
-                {name: '江西',value: Math.round(Math.random()*1000)},
-                {name: '湖北',value: Math.round(Math.random()*1000)},
-                {name: '广西',value: Math.round(Math.random()*1000)},
-                {name: '甘肃',value: Math.round(Math.random()*1000)},
-                {name: '山西',value: Math.round(Math.random()*1000)},
-                {name: '新疆',value: Math.round(Math.random()*1000)},
-                {name: '陕西',value: Math.round(Math.random()*1000)},
-                {name: '吉林',value: Math.round(Math.random()*1000)},
-                {name: '福建',value: Math.round(Math.random()*1000)},
-                {name: '贵州',value: Math.round(Math.random()*1000)},
-                {name: '广东',value: Math.round(Math.random()*1000)},
-                {name: '青海',value: Math.round(Math.random()*1000)},
-                {name: '西藏',value: Math.round(Math.random()*1000)},
-                {name: '四川',value: Math.round(Math.random()*1000)},
-                {name: '宁夏',value: Math.round(Math.random()*1000)},
-                {name: '海南',value: Math.round(Math.random()*1000)},
-                {name: '台湾',value: Math.round(Math.random()*1000)},
-                {name: '香港',value: Math.round(Math.random()*1000)},
-                {name: '澳门',value: Math.round(Math.random()*1000)}
+                    }
+                }
             ],
             markPoint : {
                 itemStyle : {
@@ -1573,22 +1506,12 @@ option = {
                     }
                 },
                 data : [
-                    {name : '北京', value : 350},
-                    {name : '天津', value : 123},
-                    {name : '上海', value : 103},
-                    {name : '东莞', value : 83},
-                    {name : '东营', value : 13},
-                    {name : '中山', value : 153},
-                    {name : '临汾', value : 303}
+                    {name : '天津', value : 350},
+                    {name : '上海', value : 103}
                 ]
             },
             geoCoord: {
                 '上海': [121.4648,31.2891],
-                '东莞': [113.8953,22.901],
-                '东营': [118.7073,37.5513],
-                '中山': [113.4229,22.478],
-                '临汾': [111.4783,36.1615],
-                '北京': [116.4551,40.2539],
                 '天津': [117.4219,39.4189]
             }
         }

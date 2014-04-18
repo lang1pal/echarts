@@ -126,7 +126,7 @@ define(function() {
             splitNumber: 5,            // 分割段数，默认为5，为0时为线性渐变
             calculable: false,         // 是否值域漫游，启用后无视splitNumber，线性渐变
             realtime: true,
-            color:['#1e90ff','#f0ffff'],//颜色 
+            color:['#006edd','#e0ffff'],//颜色 
             //text:['高','低'],           // 文本，默认为数值文本
             textStyle: {
                 color: '#333'          // 值域文字颜色
@@ -152,27 +152,55 @@ define(function() {
             itemGap: 10,               // 各个item之间的间隔，单位px，默认为10，
                                        // 横向布局时为水平间隔，纵向布局时为纵向间隔
             itemSize: 16,             // 工具箱图形宽度
-            feature : {
-                //mark : true,
-                //dataZoom : true,
-                //dataView : {readOnly: false},
-                //magicType: ['line', 'bar'],
-                //restore : true,
-                //saveAsImage : true
-            },
             showTitle : true,
-            featureImageIcon : {},   // 自定义图片icon
-            featureTitle : {
-                mark : '辅助线开关',
-                markUndo : '删除辅助线',
-                markClear : '清空辅助线',
-                dataZoom : '区域缩放',
-                dataZoomReset : '区域缩放后退',
-                dataView : '数据视图',
-                lineChart : '折线图切换',
-                barChart : '柱形图切换',
-                restore : '还原',
-                saveAsImage : '保存为图片'
+            //textStyle : {},
+            feature : {
+                mark : {
+                    show : false,
+                    title : {
+                        mark : '辅助线开关',
+                        markUndo : '删除辅助线',
+                        markClear : '清空辅助线'
+                    },
+                    lineStyle : {
+                        width : 1,
+                        color : '#1e90ff',
+                        type : 'dashed'
+                    }
+                },
+                dataZoom : {
+                    show : false,
+                    title : {
+                        dataZoom : '区域缩放',
+                        dataZoomReset : '区域缩放后退'
+                    }
+                },
+                dataView : {
+                    show : false,
+                    title : '数据视图',
+                    readOnly: false,
+                    lang : ['Data View', 'close', 'refresh']
+                },
+                magicType: {
+                    show : false,
+                    title : {
+                        line : '折线图切换',
+                        bar : '柱形图切换',
+                        stack : '堆叠',
+                        tiled : '平铺'
+                    },
+                    type : [] // 'line', 'bar', 'stack', 'tiled'
+                },
+                restore : {
+                    show : false,
+                    title : '还原'
+                },
+                saveAsImage : {
+                    show : false,
+                    title : '保存为图片',
+                    type : 'png',
+                    lang : ['点击保存'] 
+                }
             }
         },
 
@@ -411,7 +439,7 @@ define(function() {
                     // color: '各异',
                     borderColor: '#fff',       // 柱条边线
                     borderRadius: 0,           // 柱条边线圆角，单位px，默认为0
-                    borderWidth: 1,            // 柱条边线线宽，单位px，默认为1
+                    borderWidth: 0,            // 柱条边线线宽，单位px，默认为1
                     label: {
                         show: false
                         // formatter: 标签文本格式器，同Tooltip.formatter，不支持回调
@@ -422,9 +450,9 @@ define(function() {
                 },
                 emphasis: {
                     // color: '各异',
-                    borderColor: 'rgba(0,0,0,0)',   // 柱条边线
+                    borderColor: '#fff',            // 柱条边线
                     borderRadius: 0,                // 柱条边线圆角，单位px，默认为0
-                    borderWidth: 1,                 // 柱条边线线宽，单位px，默认为1
+                    borderWidth: 0,                 // 柱条边线线宽，单位px，默认为1
                     label: {
                         show: false
                         // formatter: 标签文本格式器，同Tooltip.formatter，不支持回调
@@ -455,9 +483,9 @@ define(function() {
                         width: 2,
                         type: 'solid',
                         shadowColor : 'rgba(0,0,0,0)', //默认透明
-                        shadowBlur: 5,
-                        shadowOffsetX: 3,
-                        shadowOffsetY: 3
+                        shadowBlur: 0,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0
                     }
                 },
                 emphasis: {
@@ -580,7 +608,7 @@ define(function() {
         pie: {
             center : ['50%', '50%'],    // 默认全局居中
             radius : [0, '75%'],
-            clockWise : false,          // 默认逆时针
+            clockWise : true,           // 默认顺时针
             startAngle: 90,
             minAngle: 0,                // 最小角度改为0
             selectedOffset: 10,         // 选中是扇区偏移量
@@ -589,6 +617,8 @@ define(function() {
             itemStyle: {
                 normal: {
                     // color: 各异,
+                    borderColor: '#fff',
+                    borderWidth: 1,
                     label: {
                         show: true,
                         position: 'outer'
@@ -603,12 +633,12 @@ define(function() {
                             width: 1,
                             type: 'solid'
                         }
-                    },
-                    borderWidth: 1,
-                    borderColor: '#fff'
+                    }
                 },
                 emphasis: {
                     // color: 各异,
+                    borderColor: 'rgba(0,0,0,0)',
+                    borderWidth: 1,
                     label: {
                         show: false
                         // position: 'outer'
@@ -623,8 +653,7 @@ define(function() {
                             width: 1,
                             type: 'solid'
                         }
-                    },
-                    borderWidth: 0
+                    }
                 }
             }
         },
@@ -647,10 +676,8 @@ define(function() {
             itemStyle: {
                 normal: {
                     // color: 各异,
-                    lineStyle: {
-                        width: 2,
-                        color: '#fff'
-                    },
+                    borderColor: '#fff',
+                    borderWidth: 1,
                     areaStyle: {
                         color: '#ccc'
                     },
@@ -663,10 +690,8 @@ define(function() {
                 },
                 emphasis: {                 // 也是选中样式
                     // color: 各异,
-                    lineStyle: {
-                        width: 2,
-                        color: '#fff'
-                    },
+                    borderColor: 'rgba(0,0,0,0)',
+                    borderWidth: 1,
                     areaStyle: {
                         color: 'rgba(255,215,0,0.8)'
                     },
@@ -692,6 +717,8 @@ define(function() {
             centripetal : 1,
             // 冷却因子
             coolDown : 0.99,
+            linkSymbol: null,
+            linkSymbolSize: [10, 15],
             // 分类里如果有样式会覆盖节点默认样式
             categories : [],
             itemStyle: {
@@ -787,8 +814,16 @@ define(function() {
         
         markPoint : {
             symbol: 'pin',         // 标注类型
-            symbolSize: 10,       // 标注大小，半宽（半径）参数，当图形为方向或菱形则总宽度为symbolSize * 2
-            //symbolRotate : null,// 标注旋转控制
+            symbolSize: 10,        // 标注大小，半宽（半径）参数，当图形为方向或菱形则总宽度为symbolSize * 2
+            //symbolRotate : null, // 标注旋转控制
+            effect : {
+                show: false,
+                period: 15,             // 运动周期，无单位，值越大越慢
+                scaleSize : 2         // 放大倍数，以markPoint点size为基准
+                // color : 'gold',
+                // shadowColor : 'rgba(255,215,0,0.8)',
+                // shadowBlur : 0          // 炫光模糊
+            },
             itemStyle: {
                 normal: {
                     // color: 各异，
@@ -822,29 +857,36 @@ define(function() {
             symbolSize: [2, 4],
             // 标线起始和结束的symbol旋转控制
             //symbolRotate : null,
+            //smooth : false,
+            effect : {
+                show: false,
+                period: 15,             // 运动周期，无单位，值越大越慢
+                scaleSize : 2           // 放大倍数，以markLine线lineWidth为基准
+                // color : 'gold',
+                // shadowColor : 'rgba(255,215,0,0.8)',
+                // shadowBlur : lineWidth * 2      // 炫光模糊，默认等于scaleSize计算所得
+            },
             itemStyle: {
                 normal: {
                     // color: 各异,           // 标线主色，线色，symbol主色
                     // borderColor: 随color,     // 标线symbol边框颜色，优先于color 
-                    borderWidth: 2,          // 标线symbol边框线宽，单位px，默认为2
+                    borderWidth: 1.5,          // 标线symbol边框线宽，单位px，默认为2
                     label: {
-                        show: false,
+                        show: true,
                         // 标签文本格式器，同Tooltip.formatter，不支持回调
                         // formatter : null,
                         // 可选为 'start'|'end'|'left'|'right'|'top'|'bottom'
-                        position: 'inside',  
-                        textStyle: {         // 默认使用全局文本样式，详见TEXTSTYLE
-                            color: '#333'
-                        }
+                        position: 'end'
+                        // textStyle: null      // 默认使用全局文本样式，详见TEXTSTYLE
                     },
                     lineStyle: {
                         // color: 随borderColor, // 主色，线色，优先级高于borderColor和color
                         // width: 随borderWidth, // 优先于borderWidth
-                        type: 'solid',
+                        type: 'dashed',
                         shadowColor : 'rgba(0,0,0,0)', //默认透明
-                        shadowBlur: 5,
-                        shadowOffsetX: 3,
-                        shadowOffsetY: 3
+                        shadowBlur: 0,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0
                     }
                 },
                 emphasis: {
@@ -861,6 +903,7 @@ define(function() {
             }
         },
 
+        // 主题，主题
         textStyle: {
             decoration: 'none',
             fontFamily: 'Arial, Verdana, sans-serif',
@@ -877,7 +920,7 @@ define(function() {
             RESIZE: 'resize',
             CLICK: 'click',
             HOVER: 'hover',
-            MOUSEWHEEL: 'mousewheel',
+            //MOUSEWHEEL: 'mousewheel',
             // -------业务交互逻辑
             DATA_CHANGED: 'dataChanged',
             DATA_ZOOM: 'dataZoom',
@@ -889,10 +932,12 @@ define(function() {
             DATA_VIEW_CHANGED: 'dataViewChanged',
             MAP_ROAM : 'mapRoam',
             // -------内部通信
-            TOOLTIP_HOVER: 'tooltipHover'
+            TOOLTIP_HOVER: 'tooltipHover',
+            TOOLTIP_IN_GRID: 'tooltipInGrid',
+            TOOLTIP_OUT_GRID: 'tooltipOutGrid'
         },
         DRAG_ENABLE_TIME : 150,   // 降低图表内元素拖拽敏感度，单位ms，不建议外部干预
-        // 默认标志图形类型列表
+        // 主题，默认标志图形类型列表
         symbolList : [
           'circle', 'rectangle', 'triangle', 'diamond',
           'emptyCircle', 'emptyRectangle', 'emptyTriangle', 'emptyDiamond'
@@ -905,8 +950,8 @@ define(function() {
         nameConnector: ' & ',
         valueConnector: ' : ',
         animation: true,
-        animationThreshold: 2500,       // 动画元素阀值，产生的图形原素超过2500不出动画
         addDataAnimation: true,         // 动态数据接口是否开启动画效果
+        animationThreshold: 2500,       // 动画元素阀值，产生的图形原素超过2500不出动画
         animationDuration: 2000,
         animationEasing: 'ExponentialOut'    //BounceOut
     };

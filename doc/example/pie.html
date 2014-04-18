@@ -80,10 +80,10 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     calculable : true,
@@ -97,7 +97,7 @@ option = {
                 normal : {
                     label : {
                         position : 'inner',
-                        formatter : function(a,b,c,d) {return (d - 0).toFixed(0) + '%'},
+                        formatter : function(a,b,c,d) {return (d - 0).toFixed(0) + '%'}
                     },
                     labelLine : {
                         show : false
@@ -106,8 +106,7 @@ option = {
                 emphasis : {
                     label : {
                         show : true,
-                        formatter : "{b}\n{d}%",
-                        position : 'inner'
+                        formatter : "{b}\n{d}%"
                     }
                 }
                 
@@ -235,7 +234,7 @@ option = {
             markPoint : {
                 symbol: 'star',
                 data : [
-                    {name : '最大', value : 1548, x:'80%', y:50, symbolSize:32},
+                    {name : '最大', value : 1548, x:'80%', y:50, symbolSize:32}
                 ]
             }
         }

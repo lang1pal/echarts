@@ -55,11 +55,12 @@ function refresh(isBtnRefresh){
 function refreshAll() {
     (new Function(editor.doc.getValue()))();
     for (var i = 0, l = domMain.length; i < l; i++) {
+        myChart[i].hideLoading();
         myChart[i].setTheme(theme);
     }
 }
 
-var developMode = true;
+var developMode = false;
 if (developMode) {
     // for develop
     require.config({
@@ -143,6 +144,7 @@ function requireCallback (ec) {
         document.body.appendChild(zrDom);
         
         var _zr = require('zrender').init(zrDom);
+        /*
         _zr.addShape({
             shape:'rectangle',
             style : {
@@ -150,9 +152,10 @@ function requireCallback (ec) {
                 y : 0,
                 width : domGWidth * 2,
                 height : domGHeight / 2,
-                color: '#fff'
+                color: theme.backgroundColor || '#fff'
             }
         });
+        */
         var domGLeft = domG.offsetLeft;
         var domGTop = domG.offsetTop;
         for (var i = 0, l = domMain.length; i < l; i++) {
@@ -161,14 +164,17 @@ function requireCallback (ec) {
                 style : {
                     x : domMain[i].offsetLeft - domGLeft + (i < 6 ? 0: domGWidth),
                     y : domMain[i].offsetTop - domGTop - (i < 6 ? 0: 1200),
-                    image : myChart[i].getImage()
+                    image : myChart[i].getDataURL()
                 }
             });
         }
         _zr.render();
         
         setTimeout(function() {
-            var image = _zr.toDataURL('image/png');
+            var bgColor = theme.backgroundColor
+                          && theme.backgroundColor.replace(' ','') == 'rgba(0,0,0,0)'
+                          ? '#fff' : theme.backgroundColor;
+            var image = _zr.toDataURL('image/png', bgColor);
             _zr.dispose();
             zrDom.parentNode.removeChild(zrDom);
             zrDom = null;
@@ -229,13 +235,13 @@ var option = {
         toolbox: {
             show : true,
             feature : {
-                magicType:['line', 'bar'],
-                dataView : {readOnly: false},
-                restore : true
+                magicType: {show: true, type: ['line', 'bar']},
+                dataView : {show: true, readOnly: false},
+                restore : {show: true}
             }
         },
         legend: {
-            data:['降水量（日）','降水量（夜）','蒸发量','最高温度','最低温度']
+            data:['降水量','蒸发量','最高温度','最低温度']
         },
         xAxis : [
             {
@@ -262,16 +268,10 @@ var option = {
         ],
         series : [
             {
-                name:'降水量（日）',
+                name:'降水量',
                 type:'bar',
                 stack:'1',
                 data:[12.0, 14.9, 17.0, 23.2, 35.6, 76.7, 105.6, 112.2, 52.6, 30.0, 19.4, 13.3]
-            },
-            {
-                name:'降水量（夜）',
-                type:'bar',
-                stack:'1',
-                data:[10.6, 10.9, 13.0, 12.4, 16.7, 20.7, 35.6, 22.2, 18.7, 18.8, 12.0, 10.3]
             },
             {
                 name:'蒸发量',
@@ -306,8 +306,8 @@ var option = {
             x : 'right',
             y : 'center',
             feature : {
-                magicType:['line', 'bar'],
-                restore : true
+                magicType: {show: true, type: ['line', 'bar']},
+                restore : {show: true}
             }
         },
         tooltip : {
@@ -319,7 +319,7 @@ var option = {
         grid : {
             x : 45,
             y : 40,
-            x2 : 35,
+            x2 : 35
         },
         xAxis : [
             {
@@ -389,14 +389,14 @@ var option = {
             x : 'right',
             y : 'center',
             feature : {
-                magicType:['line', 'bar'],
-                restore : true
+                magicType: {show: true, type: ['line', 'bar']},
+                restore : {show: true}
             }
         },
         grid : {
             x : 45,
             y : 40,
-            x2 : 35,
+            x2 : 35
         },
         xAxis : [
             {
@@ -466,11 +466,11 @@ var option = {
         toolbox: {
             show : true,
             feature : {
-                mark : true,
-                dataZoom : true,
-                magicType:['line', 'bar'],
-                dataView : {readOnly: false},
-                restore : true
+                mark : {show: true},
+                dataZoom : {show: true},
+                magicType: {show: true, type: ['line', 'bar']},
+                dataView : {show: true, readOnly: false},
+                restore : {show: true}
             }
         },
         dataZoom : {
@@ -669,8 +669,8 @@ var option = {
             x : 'right',
             y : 'center',
             feature : {
-                dataZoom : true,
-                restore : true
+                dataZoom : {show: true},
+                restore : {show: true}
             }
         },
         grid : {
@@ -834,8 +834,8 @@ var option = {
             x : 'right',
             y : 'center',
             feature : {
-                dataZoom : true,
-                restore : true
+                dataZoom : {show: true},
+                restore : {show: true}
             }
         },
         grid : {
@@ -921,9 +921,9 @@ var option = {
             x: 'right',
             y: 'center',
             feature : {
-                mark : true,
-                dataView : {readOnly: false},
-                restore : true
+                mark : {show: true},
+                dataView : {show: true, readOnly: false},
+                restore : {show: true}
             }
         },
         series : [

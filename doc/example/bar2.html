@@ -83,11 +83,11 @@ option = {
         x: 'right',
         y: 'center',
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            magicType:['line', 'bar'],
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            magicType : {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     calculable : true,
@@ -140,10 +140,7 @@ option = {
                     }
                 },
                 data : [
-                    [
-                        {name : '周最低', xAxis: '周一', yAxis: 900},
-                        {name : '周最高', xAxis: '周五', yAxis: 1750}
-                    ]
+                    [{type : 'min'}, {type : 'max'}]
                 ]
             }
         },

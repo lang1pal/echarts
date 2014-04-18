@@ -166,49 +166,63 @@ define(function (require) {
 
         // 轴线
         function _buildAxisLine() {
+            var lineWidth = option.axisLine.lineStyle.width;
+            var halfLineWidth = lineWidth / 2;
             var axShape = {
                 shape : 'line',
-                zlevel: _zlevelBase + 1,
-                hoverable: false
+                zlevel : _zlevelBase + 1,
+                hoverable : false
             };
             switch (option.position) {
-                case 'left':
+                case 'left' :
                     axShape.style = {
-                        xStart : grid.getX(),
-                        yStart : grid.getY(),
-                        xEnd : grid.getX(),
-                        yEnd : grid.getYend()
+                        xStart : grid.getX() - halfLineWidth,
+                        yStart : grid.getYend() + halfLineWidth,
+                        xEnd : grid.getX() - halfLineWidth,
+                        yEnd : grid.getY() - halfLineWidth
                     };
                     break;
-                case 'right':
+                case 'right' :
                     axShape.style = {
-                        xStart : grid.getXend(),
-                        yStart : grid.getY(),
-                        xEnd : grid.getXend(),
-                        yEnd : grid.getYend()
+                        xStart : grid.getXend() + halfLineWidth,
+                        yStart : grid.getYend() + halfLineWidth,
+                        xEnd : grid.getXend() + halfLineWidth,
+                        yEnd : grid.getY() - halfLineWidth
                     };
                     break;
-                case 'bottom':
+                case 'bottom' :
                     axShape.style = {
-                        xStart : grid.getX(),
-                        yStart : grid.getYend(),
-                        xEnd : grid.getXend(),
-                        yEnd : grid.getYend()
+                        xStart : grid.getX() - halfLineWidth,
+                        yStart : grid.getYend() + halfLineWidth,
+                        xEnd : grid.getXend() + halfLineWidth,
+                        yEnd : grid.getYend() + halfLineWidth
                     };
                     break;
-                case 'top':
+                case 'top' :
                     axShape.style = {
-                        xStart : grid.getX(),
-                        yStart : grid.getY(),
-                        xEnd : grid.getXend(),
-                        yEnd : grid.getY()
+                        xStart : grid.getX() - halfLineWidth,
+                        yStart : grid.getY() - halfLineWidth,
+                        xEnd : grid.getXend() + halfLineWidth,
+                        yEnd : grid.getY() - halfLineWidth
                     };
                     break;
             }
-
+            if (option.name !== '') {
+                axShape.style.text = option.name;
+                axShape.style.textPosition = option.nameLocation;
+                axShape.style.textFont = self.getFont(option.nameTextStyle);
+                if (option.nameTextStyle.align) {
+                    axShape.style.textAlign = option.nameTextStyle.align;
+                }
+                if (option.nameTextStyle.baseline) {
+                    axShape.style.textBaseline = option.nameTextStyle.baseline;
+                }
+                if (option.nameTextStyle.color) {
+                    axShape.style.textColor = option.nameTextStyle.color;
+                }
+            }
             axShape.style.strokeColor = option.axisLine.lineStyle.color;
             
-            var lineWidth = option.axisLine.lineStyle.width;
             axShape.style.lineWidth = lineWidth;
             // 亚像素优化
             if (option.position == 'left' || option.position == 'right') {
@@ -246,17 +260,17 @@ define(function (require) {
                              : typeof onGap == 'undefined'
                                    ? (option.boundaryGap ? (getGap() / 2) : 0)
                                    : 0;
-                                   
+            var startIndex = optGap > 0 ? -interval : 0;                       
             if (option.position == 'bottom' || option.position == 'top') {
                 // 横向
                 var yPosition = option.position == 'bottom'
                         ? (tickOption.inside ? (grid.getYend() - length) : grid.getYend())
                         : (tickOption.inside ? grid.getY() : (grid.getY() - length));
                 var x;
-                for (var i = 0; i < dataLength; i += interval) {
+                for (var i = startIndex; i < dataLength; i += interval) {
                     // 亚像素优化
                     x = self.subPixelOptimize(
-                        getCoordByIndex(i) + optGap, lineWidth
+                        getCoordByIndex(i) + (i >= 0 ? optGap : 0), lineWidth
                     );
                     axShape = {
                         shape : 'line',
@@ -281,10 +295,10 @@ define(function (require) {
                         : (tickOption.inside ? (grid.getXend() - length) : grid.getXend());
                         
                 var y;
-                for (var i = 0; i < dataLength; i += interval) {
+                for (var i = startIndex; i < dataLength; i += interval) {
                     // 亚像素优化
                     y = self.subPixelOptimize(
-                        getCoordByIndex(i) - optGap, lineWidth
+                        getCoordByIndex(i) - (i >= 0 ? optGap : 0), lineWidth
                     );
                     axShape = {
                         shape : 'line',
@@ -400,9 +414,15 @@ define(function (require) {
                             text : _labelData[i].value || _labelData[i],
                             textFont : self.getFont(dataTextStyle),
                             textAlign : align,
-                            textBaseline : 'middle'
+                            textBaseline : (i === 0 && option.name !== '')
+                                           ? 'bottom'
+                                           : (i == (dataLength - 1) 
+                                              && option.name !== '')
+                                             ? 'top'
+                                             : 'middle'
                         }
                     };
+                    
                     if (rotate) {
                         axShape.rotation = [
                             rotate * Math.PI / 180,
@@ -432,7 +452,7 @@ define(function (require) {
                              : typeof onGap == 'undefined'
                                    ? (option.boundaryGap ? (getGap() / 2) : 0)
                                    : 0;
-
+            dataLength -= (onGap || (typeof onGap == 'undefined' && option.boundaryGap)) ? 1 : 0;
             if (option.position == 'bottom' || option.position == 'top') {
                 // 横向
                 var sy = grid.getY();
@@ -496,71 +516,89 @@ define(function (require) {
             var axShape;
             var sAreaOption = option.splitArea;
             var color = sAreaOption.areaStyle.color;
-            color = color instanceof Array ? color : [color];
-            var colorLength = color.length;
-            //var data        = option.data;
-            var dataLength  = option.data.length;
-    
-            var onGap      = sAreaOption.onGap;
-            var optGap     = onGap 
-                             ? (getGap() / 2) 
-                             : typeof onGap == 'undefined'
-                                   ? (option.boundaryGap ? (getGap() / 2) : 0)
-                                   : 0;
-            if (option.position == 'bottom' || option.position == 'top') {
-                // 横向
-                var y = grid.getY();
-                var height = grid.getHeight();
-                var lastX = grid.getX();
-                var curX;
-
-                for (var i = 0; i <= dataLength; i += _interval) {
-                    curX = i < dataLength
-                           ? (getCoordByIndex(i) + optGap)
-                           : grid.getXend();
-                    axShape = {
-                        shape : 'rectangle',
-                        zlevel : _zlevelBase,
-                        hoverable : false,
-                        style : {
-                            x : lastX,
-                            y : y,
-                            width : curX - lastX,
-                            height : height,
-                            color : color[(i / _interval) % colorLength]
-                            // type : option.splitArea.areaStyle.type,
-                        }
-                    };
-                    self.shapeList.push(axShape);
-                    lastX = curX;
-                }
+            if (!(color instanceof Array)) {
+                // 非数组一律认为是单一颜色的字符串，单一颜色则用一个背景，颜色错误不负责啊！！！
+                axShape = {
+                    shape : 'rectangle',
+                    zlevel : _zlevelBase,
+                    hoverable : false,
+                    style : {
+                        x : grid.getX(),
+                        y : grid.getY(),
+                        width : grid.getWidth(),
+                        height : grid.getHeight(),
+                        color : color
+                        // type : option.splitArea.areaStyle.type,
+                    }
+                };
+                self.shapeList.push(axShape);
             }
             else {
-                // 纵向
-                var x = grid.getX();
-                var width = grid.getWidth();
-                var lastYend = grid.getYend();
-                var curY;
-
-                for (var i = 0; i <= dataLength; i += _interval) {
-                    curY = i < dataLength
-                           ? (getCoordByIndex(i) - optGap)
-                           : grid.getY();
-                    axShape = {
-                        shape : 'rectangle',
-                        zlevel : _zlevelBase,
-                        hoverable : false,
-                        style : {
-                            x : x,
-                            y : curY,
-                            width : width,
-                            height : lastYend - curY,
-                            color : color[(i / _interval) % colorLength]
-                            // type : option.splitArea.areaStyle.type
-                        }
-                    };
-                    self.shapeList.push(axShape);
-                    lastYend = curY;
+                // 多颜色
+                var colorLength = color.length;
+                var dataLength  = option.data.length;
+        
+                var onGap      = sAreaOption.onGap;
+                var optGap     = onGap 
+                                 ? (getGap() / 2) 
+                                 : typeof onGap == 'undefined'
+                                       ? (option.boundaryGap ? (getGap() / 2) : 0)
+                                       : 0;
+                if (option.position == 'bottom' || option.position == 'top') {
+                    // 横向
+                    var y = grid.getY();
+                    var height = grid.getHeight();
+                    var lastX = grid.getX();
+                    var curX;
+    
+                    for (var i = 0; i <= dataLength; i += _interval) {
+                        curX = i < dataLength
+                               ? (getCoordByIndex(i) + optGap)
+                               : grid.getXend();
+                        axShape = {
+                            shape : 'rectangle',
+                            zlevel : _zlevelBase,
+                            hoverable : false,
+                            style : {
+                                x : lastX,
+                                y : y,
+                                width : curX - lastX,
+                                height : height,
+                                color : color[(i / _interval) % colorLength]
+                                // type : option.splitArea.areaStyle.type,
+                            }
+                        };
+                        self.shapeList.push(axShape);
+                        lastX = curX;
+                    }
+                }
+                else {
+                    // 纵向
+                    var x = grid.getX();
+                    var width = grid.getWidth();
+                    var lastYend = grid.getYend();
+                    var curY;
+    
+                    for (var i = 0; i <= dataLength; i += _interval) {
+                        curY = i < dataLength
+                               ? (getCoordByIndex(i) - optGap)
+                               : grid.getY();
+                        axShape = {
+                            shape : 'rectangle',
+                            zlevel : _zlevelBase,
+                            hoverable : false,
+                            style : {
+                                x : x,
+                                y : curY,
+                                width : width,
+                                height : lastYend - curY,
+                                color : color[(i / _interval) % colorLength]
+                                // type : option.splitArea.areaStyle.type
+                            }
+                        };
+                        self.shapeList.push(axShape);
+                        lastYend = curY;
+                    }
                 }
             }
         }
@@ -632,7 +670,6 @@ define(function (require) {
             var gap = getGap();
             var position = option.boundaryGap ? (gap / 2) : 0;
 
-            // Math.floor可能引起一些偏差，但性能会更好
             for (var i = 0; i < dataLength; i++) {
                 if (data[i] == value
                     || (typeof data[i].value != 'undefined' 
@@ -648,9 +685,14 @@ define(function (require) {
                         // 纵向
                         position = grid.getYend() - position;
                     }
+                    
+                    return position;
+                    // Math.floor可能引起一些偏差，但性能会更好
+                    /* 准确更重要
                     return (i === 0 || i == dataLength - 1)
                            ? position
                            : Math.floor(position);
+                    */
                 }
                 position += gap;
             }
@@ -689,9 +731,13 @@ define(function (require) {
                     // 纵向
                     position = grid.getYend() - position;
                 }
+                
+                return position;
+                /* 准确更重要
                 return (dataIndex === 0 || dataIndex == option.data.length - 1)
                        ? position
                        : Math.floor(position);
+                */
             }
         }
 

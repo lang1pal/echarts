@@ -63,45 +63,44 @@ define(
              * @param {Object} style 样式
              */
             buildLinePath : function(ctx, style) {
-                //var symbolSize = style.symbolSize;
-                var xStart = style.xStart;
-                var xEnd = style.xEnd;
-                var yStart = style.yStart;
-                var yEnd = style.yEnd;
-                /*
-                if (xStart > xEnd) {
-                    xStart -= symbolSize[0];
-                    xEnd += symbolSize[1];
+                var pointList = style.pointList || this.getPointList(style);
+                style.pointList = pointList;
+                
+                if (typeof style.pointListLength == 'undefined') {
+                    style.pointListLength = pointList.length;
                 }
-                else {
-                    xStart += symbolSize[0];
-                    xEnd -= symbolSize[1];
-                }
-                if (yStart > yEnd) {
-                    yStart -= symbolSize[0];
-                    yEnd += symbolSize[1];
-                }
-                else {
-                    yStart += symbolSize[0];
-                    yEnd -= symbolSize[1];
-                }
-                */
+                var len = Math.round(style.pointListLength);
                 if (!style.lineType || style.lineType == 'solid') {
                     //默认为实线
-                    ctx.moveTo(xStart, yStart);
-                    ctx.lineTo(xEnd, yEnd);
+                    ctx.moveTo(pointList[0][0],pointList[0][1]);
+                    for (var i = 1; i < len; i++) {
+                        ctx.lineTo(pointList[i][0],pointList[i][1]);
+                    }
                 }
                 else if (style.lineType == 'dashed'
                         || style.lineType == 'dotted'
                 ) {
-                    var dashLength =(style.lineWidth || 1)  
+                    if (style.smooth !== 'spline') {
+                        // 直线
+                        var dashLength = (style.lineWidth || 1) 
                                      * (style.lineType == 'dashed' ? 5 : 1);
-                    this.dashedLineTo(
-                        ctx,
-                        xStart, yStart,
-                        xEnd, yEnd,
-                        dashLength
-                    );
+                        ctx.moveTo(pointList[0][0],pointList[0][1]);
+                        for (var i = 1; i < len; i++) {
+                            this.dashedLineTo(
+                                ctx,
+                                pointList[i - 1][0], pointList[i - 1][1],
+                                pointList[i][0], pointList[i][1],
+                                dashLength
+                            );
+                        }
+                    }
+                    else {
+                        // 曲线
+                        for (var i = 0; i < len - 1; i += 2) {
+                            ctx.moveTo(pointList[i][0],pointList[i][1]);
+                            ctx.lineTo(pointList[i + 1][0],pointList[i + 1][1]);
+                        }
+                    }
                 }
             },
 
@@ -109,6 +108,9 @@ define(
              * 标线始末标注 
              */
             brushSymbol : function(e, ctx, style, idx) {
+                if (style.symbol[idx] == 'none') {
+                    return;
+                }
                 ctx.save();
                 ctx.beginPath();
                 
@@ -116,14 +118,15 @@ define(
                 ctx.strokeStyle = style.symbolBorderColor;
                 // symbol
                 style.iconType = style.symbol[idx].replace('empty', '')
-                                                .toLowerCase();
+                                                  .toLowerCase();
                 if (style.symbol[idx].match('empty')) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+                    ctx.fillStyle = '#fff'; //'rgba(0, 0, 0, 0)';
                 }
                 
                 // symbolRotate
-                var x = idx === 0 ? style.xStart : style.xEnd;
-                var y = idx === 0 ? style.yStart : style.yEnd;
+                var len = Math.round(style.pointListLength || style.pointList.length);
+                var x = idx === 0 ? style.pointList[0][0] : style.pointList[len - 1][0];
+                var y = idx === 0 ? style.pointList[0][1] : style.pointList[len - 1][1];
                 var rotate = typeof style.symbolRotate[idx] != 'undefined'
                              ? (style.symbolRotate[idx] - 0) : 0;
                 var transform;
@@ -158,17 +161,22 @@ define(
                 }
                 
                 ctx.closePath();
-                ctx.stroke();
                 ctx.fill();
+                ctx.stroke();
                 ctx.restore();
             },
             
             buildArrawPath : function (ctx, style, idx) {
-                var symbolSize = style.symbolSize[idx];
-                var xStart = style.xStart;
-                var xEnd = style.xEnd;
-                var yStart = style.yStart;
-                var yEnd = style.yEnd;
+                var len = Math.round(style.pointListLength || style.pointList.length);
+                var symbolSize = style.symbolSize[idx] * 2;
+                var xStart = style.pointList[0][0];
+                var xEnd = style.pointList[len - 1][0];
+                var yStart = style.pointList[0][1];
+                var yEnd = style.pointList[len - 1][1];
+                var delta = 0;
+                if (style.smooth === 'spline') {
+                    delta = 0.2; // 偏移0.2弧度
+                }
                 // 原谅我吧，这三角函数实在没想明白，只能这么笨了
                 var rotate = Math.atan(
                         Math.abs((yEnd - yStart) / (xStart - xEnd)
@@ -176,30 +184,36 @@ define(
                 if (idx === 0) {
                     if (xEnd > xStart) {
                         if (yEnd > yStart) {
-                            rotate =  Math.PI * 2 - rotate;
+                            rotate =  Math.PI * 2 - rotate + delta;
+                        }
+                        else {
+                            rotate += delta;
                         }
                     }
                     else {
                         if (yEnd > yStart) {
-                            rotate += Math.PI;
+                            rotate += Math.PI - delta;
                         }
                         else {
-                            rotate = Math.PI - rotate;
+                            rotate = Math.PI - rotate - delta;
                         }
                     }
                 }
                 else {
                     if (xStart > xEnd) {
                         if (yStart > yEnd) {
-                            rotate =  Math.PI * 2 - rotate;
+                            rotate =  Math.PI * 2 - rotate + delta;
+                        }
+                        else {
+                            rotate += delta;
                         }
                     }
                     else {
                         if (yStart > yEnd) {
-                            rotate += Math.PI;
+                            rotate += Math.PI - delta;
                         }
                         else {
-                            rotate = Math.PI - rotate;
+                            rotate = Math.PI - rotate - delta;
                         }
                     }
                 }
@@ -228,6 +242,68 @@ define(
                 ctx.lineTo(x, y);
             },
             
+            getPointList : function(style) {
+                var pointList = [
+                    [style.xStart, style.yStart],
+                    [style.xEnd, style.yEnd]
+                ];
+                if (style.smooth === 'spline') {
+                    var lastPointX = pointList[1][0];
+                    var lastPointY = pointList[1][1];
+                    pointList[3] = [lastPointX, lastPointY];
+                    pointList[1] = this.getOffetPoint(pointList[0], pointList[3]);
+                    pointList[2] = this.getOffetPoint(pointList[3], pointList[0]);
+                    pointList = this.smoothSpline(pointList, false);
+                    // 修正最后一点在插值产生的偏移
+                    pointList[pointList.length - 1] = [lastPointX, lastPointY];
+                }
+                return pointList;
+            },
+            
+            /**
+             * {Array} start point
+             * {Array} end point
+             */
+            getOffetPoint : function(sp, ep) {
+                var distance = Math.sqrt(Math.round(
+                        (sp[0] - ep[0]) * (sp[0] - ep[0]) + (sp[1] - ep[1]) * (sp[1] - ep[1])
+                    )) / 3;
+                //console.log(delta);
+                var mp = [sp[0], sp[1]];
+                var angle;
+                var deltaAngle = 0.2; // 偏移0.2弧度
+                if (sp[0] != ep[0] && sp[1] != ep[1]) {
+                    // 斜率存在
+                    var k = (ep[1] - sp[1]) / (ep[0] - sp[0]);
+                    angle = Math.atan(k);
+                }
+                else if (sp[0] == ep[0]){
+                    // 垂直线
+                    angle = (sp[1] <= ep[1] ? 1 : -1) * Math.PI / 2;
+                }
+                else {
+                    // 水平线
+                    angle = 0;
+                }
+                var dX;
+                var dY;
+                if (sp[0] <= ep[0]) {
+                    angle -= deltaAngle;
+                    dX = Math.round(Math.cos(angle) * distance);
+                    dY = Math.round(Math.sin(angle) * distance);
+                    mp[0] += dX;
+                    mp[1] += dY;
+                }
+                else {
+                    angle += deltaAngle;
+                    dX = Math.round(Math.cos(angle) * distance);
+                    dY = Math.round(Math.sin(angle) * distance);
+                    mp[0] -= dX;
+                    mp[1] -= dY;
+                }
+                return mp;
+            },
+            
             /**
              * 返回矩形区域，用于局部刷新和文字定位
              * @param {Object} style
@@ -245,7 +321,9 @@ define(
             },
             
             isCover : function(e, x, y) {
-                return require('zrender/shape').get('line').isCover(e,x,y);
+                return require('zrender/shape').get(
+                    e.style.smooth !== 'spline' ? 'line' : 'brokenLine'
+                ).isCover(e,x,y);
             }
         };
 

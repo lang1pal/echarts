@@ -34,7 +34,7 @@ define(function(require) {
 
         var _zlevelBase = self.getZlevelBase();
         var _selectedMode;      // 选择模式
-        var _hoverable;         // 悬浮高亮模式
+        var _hoverable;         // 悬浮高亮模式，索引到图表
         var _showLegendSymbol;  // 显示图例颜色标识
         var _selected = {};     // 地图选择状态
         var _mapTypeMap = {};   // 图例类型索引
@@ -191,6 +191,10 @@ define(function(require) {
          */
         function _mapDataCallback(mt, vd, ms) {
             return function(md) {
+                if (!self) {
+                    // 异步地图数据回调时有可能实例已经被释放
+                    return;
+                }
                 // 缓存这份数据
                 if (mt.indexOf('|') != -1) {
                     // 子地图，加工一份新的mapData
@@ -226,6 +230,9 @@ define(function(require) {
                         if (option.animation && !option.renderAsImage) {
                             self.animationMark(option.animationDuration);
                         }
+                    }
+                    else {
+                        self.animationEffect();
                     }
                 }
             };
@@ -663,18 +670,18 @@ define(function(require) {
                 
                 // 常规设置
                 style.brushType = 'both';
-                style.color = color || self.deepQuery(
-                                  queryTarget,
-                                  'itemStyle.normal.areaStyle.color'
-                              );
-                style.strokeColor = self.deepQuery(
-                    queryTarget,
-                    'itemStyle.normal.lineStyle.color'
-                );
-                style.lineWidth = self.deepQuery(
-                    queryTarget,
-                    'itemStyle.normal.lineStyle.width'
-                );
+                style.color = color 
+                              || self.getItemStyleColor(
+                                     self.deepQuery(queryTarget, 'itemStyle.normal.color'),
+                                     data.seriesIndex, -1, data
+                                 )
+                              || self.deepQuery(
+                                  queryTarget, 'itemStyle.normal.areaStyle.color'
+                                 );
+                style.strokeColor = self.deepQuery(queryTarget, 'itemStyle.normal.borderColor');
+                style.lineWidth = self.deepQuery(queryTarget, 'itemStyle.normal.borderWidth');
+                style.lineJoin = 'round';
+                
                 style.text = _getLabelText(name, value, queryTarget, 'normal');
                 style._text = name;
                 style.textAlign = 'center';
@@ -687,10 +694,7 @@ define(function(require) {
                     'itemStyle.normal.label.textStyle'
                 );
                 style.textFont = self.getFont(font);
-                if (!self.deepQuery(
-                    queryTarget,
-                    'itemStyle.normal.label.show'
-                )) {
+                if (!self.deepQuery(queryTarget, 'itemStyle.normal.label.show')) {
                     style.textColor = 'rgba(0,0,0,0)';  // 默认不呈现文字
                 }
                 
@@ -705,16 +709,13 @@ define(function(require) {
                         brushType: 'both',
                         x : style.textX,
                         y : style.textY,
-                        text : _getLabelText(
-                            name, value, queryTarget, 'normal'
-                        ),
+                        text : _getLabelText(name, value, queryTarget, 'normal'),
                         _text : name,
                         textAlign : 'center',
                         color : style.textColor,
                         strokeColor : 'rgba(0,0,0,0)',
                         textFont : style.textFont
-                    },
-                    onmouseover : self.shapeHandler.onmouseover
+                    }
                 };
                 textShape._style = zrUtil.clone(textShape.style);
                 textShape.highlightStyle = zrUtil.clone(textShape.style);
@@ -723,23 +724,24 @@ define(function(require) {
                 
                 // 高亮
                 highlightStyle.brushType = 'both';
-                highlightStyle.color = self.deepQuery(
-                    queryTarget,
-                    'itemStyle.emphasis.areaStyle.color'
-                ) || style.color;
+                highlightStyle.color = self.getItemStyleColor(
+                                           self.deepQuery(queryTarget, 'itemStyle.emphasis.color'),
+                                           data.seriesIndex, -1, data
+                                       ) 
+                                       || self.deepQuery(
+                                              queryTarget, 'itemStyle.emphasis.areaStyle.color'
+                                          ) 
+                                       || style.color;
                 highlightStyle.strokeColor = self.deepQuery(
                     queryTarget,
-                    'itemStyle.emphasis.lineStyle.color'
+                    'itemStyle.emphasis.borderColor'
                 ) || style.strokeColor;
                 highlightStyle.lineWidth = self.deepQuery(
                     queryTarget,
-                    'itemStyle.emphasis.lineStyle.width'
+                    'itemStyle.emphasis.borderWidth'
                 ) || style.lineWidth;
                 highlightStyle._text = name;
-                if (self.deepQuery(
-                    queryTarget,
-                    'itemStyle.emphasis.label.show'
-                )) {
+                if (self.deepQuery(queryTarget, 'itemStyle.emphasis.label.show')) {
                     highlightStyle.text = _getLabelText(
                         name, value, queryTarget, 'emphasis'
                     );
@@ -774,7 +776,7 @@ define(function(require) {
                 
                 if (_selectedMode[mapType] &&
                      _selected[name]
-                     || (data && data.selected && _selected[name] !== false) 
+                     || (data.selected && _selected[name] !== false) 
                 ) {
                     textShape.style = zrUtil.clone(
                         textShape.highlightStyle
@@ -785,14 +787,30 @@ define(function(require) {
                 if (_selectedMode[mapType]) {
                     _selected[name] = typeof _selected[name] != 'undefined'
                                       ? _selected[name]
-                                      : (data && data.selected);
+                                      : data.selected;
                     _mapTypeMap[name] = mapType;
-                    textShape.clickable = true;
-                    textShape.onclick = self.shapeHandler.onclick;
                     
-                    shape.clickable = true;
-                    shape.onclick = self.shapeHandler.onclick;
+                    if (typeof data.selectable == 'undefined' || data.selectable) {
+                        textShape.clickable = true;
+                        textShape.onclick = self.shapeHandler.onclick;
+                        
+                        shape.clickable = true;
+                        shape.onclick = self.shapeHandler.onclick;
+                    }
                 }
+                
+                if (typeof data.hoverable != 'undefined') {
+                    // 数据级优先
+                    textShape.hoverable = shape.hoverable = data.hoverable;
+                    if (data.hoverable) {
+                        textShape.onmouseover = self.shapeHandler.onmouseover;
+                    }
+                }
+                else if (_hoverable[mapType]){
+                    // 系列级，补充一个关联响应
+                    textShape.onmouseover = self.shapeHandler.onmouseover;
+                }
+                
                 // console.log(name,shape);
                 
                 ecData.pack(
@@ -1010,12 +1028,16 @@ define(function(require) {
                     zr.modShape(self.shapeList[i].id, mod, true);
                 }
             }
+            
             messageCenter.dispatch(
                 ecConfig.EVENT.MAP_ROAM,
                 param.event,
                 {type : 'move'}
             );
+            
+            self.clearAnimationShape();
             zr.refresh();
+            
             _justMove = true;
             zrEvent.stop(event);
         }
@@ -1026,6 +1048,7 @@ define(function(require) {
             _my = zrEvent.getY(event);
             _mousedown = false;
             setTimeout(function(){
+                _justMove && self.animationEffect();
                 _justMove = false;
                 zr.un(zrConfig.EVENT.MOUSEMOVE, _onmousemove);
                 zr.un(zrConfig.EVENT.MOUSEUP, _onmouseup);

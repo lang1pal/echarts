@@ -11,8 +11,9 @@ define(function (require) {
      * @param {Object} messageCenter echart消息中心
      * @param {ZRender} zr zrender实例
      * @param {HtmlElement} dom 目标对象
+     * @param {ECharts} myChart 当前图表实例
      */
-    function Toolbox(ecConfig, messageCenter, zr, dom) {
+    function Toolbox(ecConfig, messageCenter, zr, dom, myChart) {
         var Base = require('./base');
         Base.call(this, ecConfig, zr);
 
@@ -25,16 +26,22 @@ define(function (require) {
         
         var self = this;
         self.type = ecConfig.COMPONENT_TYPE_TOOLBOX;
-
+        
+        var _canvasSupported = require('zrender/tool/env').canvasSupported;
+        
         var _zlevelBase = self.getZlevelBase();
-        var _magicType;
+        var _magicType = {};
         var _magicMap;
+        var _isSilence = false;
+        
         var _iconList;
         var _iconShapeMap = {};
         var _itemGroupLocation;
+        var _featureTitle = {};             // 文字
+        var _featureIcon = {};              // 图标
+        var _featureColor = {};             // 颜色
         var _enableColor = 'red';
         var _disableColor = '#ccc';
-        var _markColor;
         var _markStart;
         var _marking;
         var _markShape;
@@ -45,40 +52,59 @@ define(function (require) {
         var _zoomQueue;
 
         var _dataView;
+        
+        var _MAGICTYPE_STACK = 'stack';
+        var _MAGICTYPE_TILED = 'tiled';
 
         function _buildShape() {
             _iconList = [];
             var feature = option.toolbox.feature;
+            var iconName = [];
             for (var key in feature){
-                if (feature[key]) {
+                if (feature[key].show) {
                     switch (key) {
                         case 'mark' :
-                            _iconList.push('mark');
-                            _iconList.push('markUndo');
-                            _iconList.push('markClear');
+                            iconName.push({key : key, name : 'mark'});
+                            iconName.push({key : key, name : 'markUndo'});
+                            iconName.push({key : key, name : 'markClear'});
                             break;
                         case 'magicType' :
-                            for (var i = 0, l = feature[key].length; i < l; i++
-                            ) {
-                                _iconList.push(feature[key][i] + 'Chart');
+                            for (var i = 0, l = feature[key].type.length; i < l; i++) {
+                                feature[key].title[feature[key].type[i] + 'Chart']
+                                    = feature[key].title[feature[key].type[i]];
+                                iconName.push({key : key, name : feature[key].type[i] + 'Chart'});
                             }
                             break;
                         case 'dataZoom' :
-                            _iconList.push('dataZoom');
-                            _iconList.push('dataZoomReset');
+                            iconName.push({key : key, name : 'dataZoom'});
+                            iconName.push({key : key, name : 'dataZoomReset'});
                             break;
                         case 'saveAsImage' :
-                            if (!G_vmlCanvasManager) {
-                                _iconList.push('saveAsImage');
+                            if (_canvasSupported) {
+                                iconName.push({key : key, name : 'saveAsImage'});
                             }
                             break;
                         default :
-                            _iconList.push(key);
+                            iconName.push({key : key, name : key});
                             break;
                     }
                 }
             }
-            if (_iconList.length > 0) {
+            if (iconName.length > 0) {
+                var name;
+                var key;
+                for (var i = 0, l = iconName.length; i < l; i++) {
+                    name = iconName[i].name;
+                    key = iconName[i].key;
+                    _iconList.push(name);
+                    _featureTitle[name] = feature[key].title[name] || feature[key].title;
+                    if (feature[key].icon) {
+                        _featureIcon[name] = feature[key].icon[name] || feature[key].icon;
+                    }
+                    if (feature[key].color) {
+                        _featureColor[name] = feature[key].color[name] || feature[key].color;
+                    }
+                }
                 _itemGroupLocation = _getItemGroupLocation();
 
                 _buildBackground();
@@ -149,30 +175,26 @@ define(function (require) {
                         height : itemSize,
                         iconType : _iconList[i],
                         lineWidth : 1,
-                        strokeColor : color[i % color.length],
-                        shadowColor: '#ccc',
-                        shadowBlur : 2,
-                        shadowOffsetX : 2,
-                        shadowOffsetY : 2,
+                        strokeColor : _featureColor[_iconList[i]] || color[i % color.length],
                         brushType: 'stroke'
                     },
                     highlightStyle : {
                         lineWidth : 2,
-                        shadowBlur: 5,
                         text : toolboxOption.showTitle 
-                               ? toolboxOption.featureTitle[_iconList[i]]
-                               : false,
+                               ? _featureTitle[_iconList[i]]
+                               : undefined,
                         textFont : textFont,
                         textPosition : textPosition,
-                        strokeColor : color[i % color.length]
+                        strokeColor : _featureColor[_iconList[i]] || color[i % color.length]
                     },
                     hoverable : true,
                     clickable : true
                 };
                 
-                if (toolboxOption.featureImageIcon[_iconList[i]]) {
-                    itemShape.style.image = 
-                        toolboxOption.featureImageIcon[_iconList[i]];
+                if (_featureIcon[_iconList[i]]) {
+                    itemShape.style.image = _featureIcon[_iconList[i]].replace(
+                        new RegExp('^image:\\/\\/'), ''
+                    );
                     itemShape.style.opacity = 0.8;
                     itemShape.highlightStyle.opacity = 1;
                     itemShape.shape = 'image';
@@ -203,7 +225,6 @@ define(function (require) {
                 switch(_iconList[i]) {
                     case 'mark':
                         itemShape.onclick = _onMark;
-                        _markColor = itemShape.style.strokeColor;
                         break;
                     case 'markUndo':
                         itemShape.onclick = _onMarkUndo;
@@ -236,10 +257,13 @@ define(function (require) {
                     default:
                         if (_iconList[i].match('Chart')) {
                             itemShape._name = _iconList[i].replace('Chart', '');
-                            if (itemShape._name == _magicType) {
+                            if (_magicType[itemShape._name]) {
                                 itemShape.style.strokeColor = _enableColor;
                             }
                             itemShape.onclick = _onMagicType;
+                        }
+                        else {
+                            itemShape.onclick = _onCustomHandler;
                         }
                         break;
                 }
@@ -506,15 +530,15 @@ define(function (require) {
                         lineWidth : self.query(
                                         option,
                                         'toolbox.feature.mark.lineStyle.width'
-                                    ) || 2,
+                                    ),
                         strokeColor : self.query(
                                           option,
                                           'toolbox.feature.mark.lineStyle.color'
-                                      ) || _markColor,
+                                      ),
                         lineType : self.query(
                                        option,
                                        'toolbox.feature.mark.lineStyle.type'
-                                   ) || 'dashed'
+                                   )
                     }
                 };
                 zr.addHoverShape(_markShape);
@@ -686,7 +710,20 @@ define(function (require) {
             if (imgType != 'png' && imgType != 'jpeg') {
                 imgType = 'png';
             }
-            var image = zr.toDataURL('image/' + imgType); 
+            
+            var image;
+            if (!myChart.isConnected()) {
+                image = zr.toDataURL(
+                    'image/' + imgType,
+                    option.backgroundColor 
+                    && option.backgroundColor.replace(' ','') == 'rgba(0,0,0,0)'
+                        ? '#fff' : option.backgroundColor
+                );
+            }
+            else {
+                image = myChart.getConnectedDataURL(imgType);
+            }
+             
             var downloadDiv = document.createElement('div');
             downloadDiv.id = '__echarts_download_wrap__';
             downloadDiv.style.cssText = 'position:fixed;'
@@ -712,12 +749,12 @@ define(function (require) {
                    : 'ECharts')
                 + '.' + imgType 
             );
-            downloadLink.innerHTML = '<img src="' + image 
+            downloadLink.innerHTML = '<img style="vertical-align:middle" src="' + image 
                 + '" title="'
                 + (!!(window.attachEvent 
                      && navigator.userAgent.indexOf('Opera') === -1)
                   ? '右键->图片另存为'
-                  : (saveOption.lang ? saveOption.lang : '点击保存'))
+                  : (saveOption.lang ? saveOption.lang[0] : '点击保存'))
                 + '"/>';
             
             downloadDiv.appendChild(downloadLink);
@@ -754,13 +791,27 @@ define(function (require) {
         function _onMagicType(param) {
             _resetMark();
             var itemName = param.target._name;
-            if (itemName == _magicType) {
+            if (_magicType[itemName]) {
                 // 取消
-                _magicType = false;
+                _magicType[itemName] = false;
             }
             else {
                 // 启用
-                _magicType = itemName;
+                _magicType[itemName] = true;
+                // 折柱互斥
+                if (itemName == ecConfig.CHART_TYPE_LINE) {
+                    _magicType[ecConfig.CHART_TYPE_BAR] = false;
+                }
+                else if (itemName == ecConfig.CHART_TYPE_BAR) {
+                    _magicType[ecConfig.CHART_TYPE_LINE] = false;
+                }
+                // 堆叠平铺互斥
+                if (itemName == _MAGICTYPE_STACK) {
+                    _magicType[_MAGICTYPE_TILED] = false;
+                }
+                else if (itemName == _MAGICTYPE_TILED) {
+                    _magicType[_MAGICTYPE_STACK] = false;
+                }
             }
             messageCenter.dispatch(
                 ecConfig.EVENT.MAGIC_TYPE_CHANGED,
@@ -769,15 +820,33 @@ define(function (require) {
             );
             return true;
         }
+        
+        function setMagicType(magicType) {
+            _resetMark();
+            _magicType = magicType;
+            
+            !_isSilence && messageCenter.dispatch(
+                ecConfig.EVENT.MAGIC_TYPE_CHANGED,
+                null,
+                {magicType : _magicType}
+            );
+        }
+        
+        // 用户自定义扩展toolbox方法
+        function _onCustomHandler(param) {
+            var target = param.target.style.iconType;
+            var featureHandler = option.toolbox.feature[target].onclick;
+            if (typeof featureHandler === 'function') {
+                featureHandler(option);
+            }
+        }
 
         // 重置备份还原状态等
         function reset(newOption) {
-            if (newOption.toolbox
-                && newOption.toolbox.show
-                && newOption.toolbox.feature.magicType
-                && newOption.toolbox.feature.magicType.length > 0
+            if (self.query(newOption, 'toolbox.show')
+                && self.query(newOption, 'toolbox.feature.magicType.show')
             ) {
-                var magicType = newOption.toolbox.feature.magicType;
+                var magicType = newOption.toolbox.feature.magicType.type;
                 var len = magicType.length;
                 _magicMap = {};     // 标识可控类型
                 while (len--) {
@@ -795,7 +864,7 @@ define(function (require) {
                                      newOption.series[len].xAxisIndex || 0
                                  ]
                                : newOption.xAxis;
-                        if (axis && axis.type == 'category') {
+                        if (axis && (axis.type || 'category') == 'category') {
                             axis.__boundaryGap =
                                 typeof axis.boundaryGap != 'undefined'
                                 ? axis.boundaryGap : true;
@@ -819,9 +888,13 @@ define(function (require) {
                               )
                             : {};
                     }
+                    
+                    if (_magicMap[_MAGICTYPE_STACK] || _magicMap[_MAGICTYPE_TILED]) {
+                        newOption.series[len].__stack = newOption.series[len].stack;
+                    }
                 }
             }
-            _magicType = false;
+            _magicType = {};
             
             // 框选缩放
             var zoomOption = newOption.dataZoom;
@@ -851,16 +924,17 @@ define(function (require) {
                 _zoomQueue = [];
             }
         }
-
+        
         function getMagicOption(){
             var axis;
-            if (_magicType) {
-                // 启动
-                var boundaryGap = _magicType == ecConfig.CHART_TYPE_LINE
-                                  ? false : true;
+            if (_magicType[ecConfig.CHART_TYPE_LINE] || _magicType[ecConfig.CHART_TYPE_BAR]) {
+                // 图表类型有切换
+                var boundaryGap = _magicType[ecConfig.CHART_TYPE_LINE] ? false : true;
                 for (var i = 0, l = option.series.length; i < l; i++) {
                     if (_magicMap[option.series[i].type]) {
-                        option.series[i].type = _magicType;
+                        option.series[i].type = _magicType[ecConfig.CHART_TYPE_LINE]
+                                                ? ecConfig.CHART_TYPE_LINE
+                                                : ecConfig.CHART_TYPE_BAR;
                         // 避免不同类型图表类型的样式污染
                         option.series[i].itemStyle = zrUtil.clone(
                             option.series[i].__itemStyle
@@ -869,7 +943,7 @@ define(function (require) {
                         axis = option.xAxis instanceof Array
                                ? option.xAxis[option.series[i].xAxisIndex || 0]
                                : option.xAxis;
-                        if (axis && axis.type == 'category') {
+                        if (axis && (axis.type || 'category') == 'category') {
                             axis.boundaryGap = 
                                 boundaryGap ? true : axis.__boundaryGap;
                         }
@@ -884,7 +958,7 @@ define(function (require) {
                 }
             }
             else {
-                // 还原
+                // 图表类型无切换
                 for (var i = 0, l = option.series.length; i < l; i++) {
                     if (_magicMap[option.series[i].type]) {
                         option.series[i].type = option.series[i].__type;
@@ -895,7 +969,7 @@ define(function (require) {
                         axis = option.xAxis instanceof Array
                                ? option.xAxis[option.series[i].xAxisIndex || 0]
                                : option.xAxis;
-                        if (axis && axis.type == 'category') {
+                        if (axis && (axis.type || 'category') == 'category') {
                             axis.boundaryGap = axis.__boundaryGap;
                         }
                         axis = option.yAxis instanceof Array
@@ -907,10 +981,34 @@ define(function (require) {
                     }
                 }
             }
+            
+            if (_magicType[_MAGICTYPE_STACK] || _magicType[_MAGICTYPE_TILED]) {
+                // 有堆叠平铺切换
+                for (var i = 0, l = option.series.length; i < l; i++) {
+                    if (_magicType[_MAGICTYPE_STACK]) {
+                        // 启用堆叠
+                        option.series[i].stack = '_ECHARTS_STACK_KENER_2014_';
+                    }
+                    else if (_magicType[_MAGICTYPE_TILED]) {
+                        // 启用平铺
+                        option.series[i].stack = null;
+                    }
+                }
+            }
+            else {
+                // 无堆叠平铺切换
+                for (var i = 0, l = option.series.length; i < l; i++) {
+                    option.series[i].stack = option.series[i].__stack;
+                }
+            }
 
             return option;
         }
 
+        function silence(s) {
+            _isSilence = s;
+        }
+        
         function render(newOption, newComponent){
             _resetMark();
             _resetZoom();
@@ -954,6 +1052,7 @@ define(function (require) {
         function dispose() {
             if (_dataView) {
                 _dataView.dispose();
+                _dataView = null;
             }
 
             self.clear();
@@ -982,6 +1081,8 @@ define(function (require) {
         self.resize = resize;
         self.hideDataView = hideDataView;
         self.getMagicOption = getMagicOption;
+        self.silence = silence;
+        self.setMagicType = setMagicType;
         self.reset = reset;
         self.refresh = refresh;
     }

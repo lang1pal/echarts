@@ -89,6 +89,8 @@ define(
                 restore : _iconRestore,
                 lineChart : _iconLineChart,
                 barChart : _iconBarChart,
+                stackChart : _iconStackChart,
+                tiledChart : _iconTiledChart,
                 dataView : _iconDataView,
                 saveAsImage : _iconSave,
                 
@@ -272,6 +274,30 @@ define(
             ctx.lineTo(style.x + 12 * dx,       style.y + 14 * dy);
         }
 
+        function _iconStackChart(ctx, style) {
+            var x = style.x;
+            var y = style.y;
+            var width = style.width;
+            var height = style.height;
+            var dy = Math.round(height / 3);
+            var len = 3;
+            while (len--) {
+                ctx.rect(x, y + dy * len + 2, width, 2);
+            }
+        }
+        
+        function _iconTiledChart(ctx, style) {
+            var x = style.x;
+            var y = style.y;
+            var width = style.width;
+            var height = style.height;
+            var dx = Math.round(width / 3);
+            var len = 3;
+            while (len--) {
+                ctx.rect(x + dx * len, y, 2, height);
+            }
+        }
+        
         function _iconDataView(ctx, style) {
             var dx = style.width / 16;
 
@@ -334,10 +360,15 @@ define(
         function _iconCircle(ctx, style) {
             var width = style.width / 2;
             var height = style.height / 2;
+            var r = Math.min(width, height);
+            ctx.moveTo(
+                style.x + width + r, 
+                style.y + height
+            );
             ctx.arc(
                 style.x + width, 
                 style.y + height, 
-                Math.min(width, height),
+                r,
                 0, 
                 Math.PI * 2
             );
@@ -514,11 +545,11 @@ define(
                     e.style.__rect = rect;
                 }
                 // 提高交互体验，太小的图形包围盒四向扩大4px
-                var delta = (rect.height < 10 || rect.width < 10 ) ? 4 : 0;
+                var delta = (rect.height < 8 || rect.width < 8 ) ? 4 : 0;
                 if (x >= rect.x - delta
-                    && x <= (rect.x + rect.width + 2 * delta)
+                    && x <= (rect.x + rect.width + delta)
                     && y >= rect.y - delta
-                    && y <= (rect.y + rect.height + 2 * delta)
+                    && y <= (rect.y + rect.height + delta)
                 ) {
                     // 矩形内
                     return true;

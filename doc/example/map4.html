@@ -96,16 +96,17 @@ option = {
         x: 'right',
         y: 'center',
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     dataRange: {
         min: 0,
         max: 1000000,
         text:['High','Low'],
+        realtime: false,
         calculable : true,
         color: ['orangered','yellow','lightskyblue']
     },

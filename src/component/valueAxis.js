@@ -52,6 +52,8 @@ define(function (require) {
 
         // 轴线
         function _buildAxisLine() {
+            var lineWidth = option.axisLine.lineStyle.width;
+            var halfLineWidth = lineWidth / 2;
             var axShape = {
                 shape : 'line',
                 zlevel : _zlevelBase + 1,
@@ -60,34 +62,34 @@ define(function (require) {
             switch (option.position) {
                 case 'left' :
                     axShape.style = {
-                        xStart : grid.getX(),
-                        yStart : grid.getYend(),
-                        xEnd : grid.getX(),
-                        yEnd : grid.getY()
+                        xStart : grid.getX() - halfLineWidth,
+                        yStart : grid.getYend() + halfLineWidth,
+                        xEnd : grid.getX() - halfLineWidth,
+                        yEnd : grid.getY() - halfLineWidth
                     };
                     break;
                 case 'right' :
                     axShape.style = {
-                        xStart : grid.getXend(),
-                        yStart : grid.getYend(),
-                        xEnd : grid.getXend(),
-                        yEnd : grid.getY()
+                        xStart : grid.getXend() + halfLineWidth,
+                        yStart : grid.getYend() + halfLineWidth,
+                        xEnd : grid.getXend() + halfLineWidth,
+                        yEnd : grid.getY() - halfLineWidth
                     };
                     break;
                 case 'bottom' :
                     axShape.style = {
-                        xStart : grid.getX(),
-                        yStart : grid.getYend(),
-                        xEnd : grid.getXend(),
-                        yEnd : grid.getYend()
+                        xStart : grid.getX() - halfLineWidth,
+                        yStart : grid.getYend() + halfLineWidth,
+                        xEnd : grid.getXend() + halfLineWidth,
+                        yEnd : grid.getYend() + halfLineWidth
                     };
                     break;
                 case 'top' :
                     axShape.style = {
-                        xStart : grid.getX(),
-                        yStart : grid.getY(),
-                        xEnd : grid.getXend(),
-                        yEnd : grid.getY()
+                        xStart : grid.getX() - halfLineWidth,
+                        yStart : grid.getY() - halfLineWidth,
+                        xEnd : grid.getXend() + halfLineWidth,
+                        yEnd : grid.getY() - halfLineWidth
                     };
                     break;
             }
@@ -221,15 +223,11 @@ define(function (require) {
                         style : {
                             x : getCoord(data[i]),
                             y : yPosition,
-                            color : textStyle.color,
+                            color : typeof textStyle.color == 'function'
+                                    ? textStyle.color(data[i]) : textStyle.color,
                             text : _valueLabel[i],
                             textFont : self.getFont(textStyle),
-                            textAlign : (i === 0 && option.name !== '')
-                                        ? 'left'
-                                        : (i == (dataLength - 1) 
-                                           && option.name !== '')
-                                          ? 'right'
-                                          : 'center',
+                            textAlign : 'center',
                             textBaseline : baseLine
                         }
                     };
@@ -269,7 +267,8 @@ define(function (require) {
                         style : {
                             x : xPosition,
                             y : getCoord(data[i]),
-                            color : textStyle.color,
+                            color : typeof textStyle.color == 'function'
+                                    ? textStyle.color(data[i]) : textStyle.color,
                             text : _valueLabel[i],
                             textFont : self.getFont(textStyle),
                             textAlign : align,
@@ -311,7 +310,7 @@ define(function (require) {
                 var ey = grid.getYend();
                 var x;
 
-                for (var i = 0; i < dataLength; i++) {
+                for (var i = 1; i < dataLength - 1; i++) {
                     // 亚像素优化
                     x = self.subPixelOptimize(getCoord(data[i]), lineWidth);
                     axShape = {
@@ -338,7 +337,7 @@ define(function (require) {
                 var ex = grid.getXend();
                 var y;
 
-                for (var i = 0; i < dataLength; i++) {
+                for (var i = 1; i < dataLength - 1; i++) {
                     // 亚像素优化
                     y = self.subPixelOptimize(getCoord(data[i]), lineWidth);
                     axShape = {
@@ -450,7 +449,7 @@ define(function (require) {
          * 极值计算
          */
         function _calculateValue() {
-            if (isNaN(option.min) || isNaN(option.max)) {
+            if (isNaN(option.min - 0) || isNaN(option.max - 0)) {
                 // 有一个没指定都得算
                 // 数据整形
                 var oriData;            // 原始数据
@@ -482,10 +481,10 @@ define(function (require) {
                         // 不是自己的数据不计算极值
                         continue;
                     }
-
+                    
+                    var key = series[i].name || 'kener';
                     if (!series[i].stack) {
-                        var key = series[i].name || '';
-                        data[key] = [];
+                        data[key] = data[key] || [];
                         oriData = series[i].data;
                         for (var j = 0, k = oriData.length; j < k; j++) {
                             value = typeof oriData[j].value != 'undefined'
@@ -516,6 +515,7 @@ define(function (require) {
                         var keyN = '__Magic_Key_Negative__' + series[i].stack;
                         data[keyP] = data[keyP] || [];
                         data[keyN] = data[keyN] || [];
+                        data[key] = data[key] || [];  // scale下还需要记录每一个量
                         oriData = series[i].data;
                         for (var j = 0, k = oriData.length; j < k; j++) {
                             value = typeof oriData[j].value != 'undefined'
@@ -540,6 +540,9 @@ define(function (require) {
                                 else {
                                     data[keyN][j] = value;
                                 }
+                            }
+                            if (option.scale) {
+                                data[key].push(value);
                             }
                         }
                     }
@@ -568,32 +571,38 @@ define(function (require) {
                         }
                     }
                 }
+                
+                //console.log(_min,_max,'vvvvv111111')
+                _min = isNaN(option.min - 0)
+                       ? (_min - Math.abs(_min * option.boundaryGap[0]))
+                       : (option.min - 0);    // 指定min忽略boundaryGay[0]
+    
+                _max = isNaN(option.max - 0)
+                       ? (_max + Math.abs(_max * option.boundaryGap[1]))
+                       : (option.max - 0);    // 指定max忽略boundaryGay[1]
+                if (_min == _max) {
+                    if (_max === 0) {
+                        // 修复全0数据
+                        _max = option.power > 0 ? option.power : 1;
+                    }
+                    // 修复最大值==最小值时数据整形
+                    else if (_max > 0) {
+                        _min = _max / option.splitNumber;
+                    }
+                    else { // _max < 0
+                        _max = _max / option.splitNumber;
+                    }
+                }
+                _reformValue(option.scale);
             }
             else {
                 _hasData = true;
+                // 用户指定min max就不多管闲事了
+                _min = option.min - 0;    // 指定min忽略boundaryGay[0]
+                _max = option.max - 0;    // 指定max忽略boundaryGay[1]
+                customerDefine = true;
+                _customerValue();
             }
-            //console.log(_min,_max,'vvvvv111111')
-            _min = isNaN(option.min)
-                   ? (_min - Math.abs(_min * option.boundaryGap[0]))
-                   : option.min;    // 指定min忽略boundaryGay[0]
-
-            _max = isNaN(option.max)
-                   ? (_max + Math.abs(_max * option.boundaryGap[1]))
-                   : option.max;    // 指定max忽略boundaryGay[1]
-            if (_min == _max) {
-                if (_max === 0) {
-                    // 修复全0数据
-                    _max = option.power > 0 ? option.power : 1;
-                }
-                // 修复最大值==最小值时数据整形
-                else if (_max > 0) {
-                    _min = _max / option.splitNumber;
-                }
-                else { // _max < 0
-                    _max = _max / option.splitNumber;
-                }
-            }
-            _reformValue(option.scale);
         }
 
         /**
@@ -677,7 +686,7 @@ define(function (require) {
             var splitGap;
             var power;
             if (precision === 0) {    // 整数
-                 power = option.power;
+                 power = option.power > 1 ? option.power : 1;
             }
             else {                          // 小数
                 // 放大倍数后复用整数逻辑，最后再缩小回去
@@ -691,52 +700,52 @@ define(function (require) {
             if (_min >= 0 && _max >= 0) {
                 // 双正
                 if (!scale) {
+                    // power自动降级
+                    while ((_max / power < splitNumber) && power != 1) {
+                        power = power / 10;
+                    }
                     _min = 0;
                 }
-                // power自动降级
-                while ((_max / power < splitNumber) && power != 1) {
-                    power = power / 10;
-                }
-                total = _max - _min;
-                // 粗算
-                splitGap = Math.ceil((total / splitNumber) / power) * power;
-                if (scale) {
+                else {
+                    // power自动降级
+                    while (_min < power && power != 1) {
+                        power = power / 10;
+                    }
                     if (precision === 0) {    // 整数
-                        _min = Math.floor(_min / splitGap) * splitGap;
-                    }
-                    // 修正
-                    if (_min + splitGap * splitNumber < _max) {
-                        splitGap = 
-                            Math.ceil(((_max - _min) / splitNumber) / power)
-                            * power;
+                        // 满足power
+                        _min = Math.floor(_min / power) * power;
+                        _max = Math.ceil(_max / power) * power;
                     }
                 }
+                power = power > 1 ? power / 10 : 1;
+                total = _max - _min;
+                splitGap = Math.ceil((total / splitNumber) / power) * power;
                 _max = _min + splitGap * splitNumber;
             }
             else if (_min <= 0 && _max <= 0) {
                 // 双负
+                power = -power;
                 if (!scale) {
+                    // power自动降级
+                    while ((_min / power < splitNumber) && power != -1) {
+                        power = power / 10;
+                    }
                     _max = 0;
                 }
-                power = -power;
-                // power自动降级
-                while ((_min / power < splitNumber) && power != -1) {
-                    power = power / 10;
+                else {
+                    // power自动降级
+                    while (_max > power && power != -1) {
+                        power = power / 10;
+                    }
+                    if (precision === 0) {    // 整数
+                        // 满足power
+                        _min = Math.ceil(_min / power) * power;
+                        _max = Math.floor(_max / power) * power;
+                    }
                 }
+                power = power < -1 ? power / 10 : -1;
                 total = _min - _max;
                 splitGap = -Math.ceil((total / splitNumber) / power) * power;
-                if (scale) {
-                    if (precision === 0) {    // 整数
-                        _max = Math.ceil(_max / splitGap) * splitGap;
-                    }
-                    // 修正
-                    if (_max - splitGap * splitNumber > _min) {
-                        splitGap = 
-                            Math.ceil(((_min - _max) / splitNumber) / power)
-                            * power;
-                    }
-                }
-                
                 _min = -splitGap * splitNumber + _max;
             }
             else {
@@ -778,7 +787,18 @@ define(function (require) {
                         (_valueList[i] / power).toFixed(precision) - 0;
                 }
             }
+            _reformLabelData();
+        }
+        
+        function _customerValue() {
+            var splitNumber = option.splitNumber;
+            var precision = option.precision;
+            var splitGap = (_max - _min) / splitNumber;
             
+            _valueList = [];
+            for (var i = 0; i <= splitNumber; i++) {
+                _valueList.push((_min + splitGap * i).toFixed(precision) - 0);
+            }
             _reformLabelData();
         }
 
@@ -879,10 +899,25 @@ define(function (require) {
                 result = (value - _min) / valueRange * total + grid.getX();
             }
 
+            return result;
             // Math.floor可能引起一些偏差，但性能会更好
+            /* 准确更重要
             return (value == _min || value == _max)
                    ? result
                    : Math.floor(result);
+            */
+        }
+        
+        // 根据值换算绝对大小
+        function getCoordSize(value) {
+            if (option.position == 'left' || option.position == 'right') {
+                // 纵向
+                return Math.abs(value / (_max - _min) * grid.getHeight());
+            }
+            else {
+                // 横向
+                return Math.abs(value / (_max - _min) * grid.getWidth());
+            }
         }
 
         function getPosition() {
@@ -893,6 +928,7 @@ define(function (require) {
         self.refresh = refresh;
         self.getExtremum = getExtremum;
         self.getCoord = getCoord;
+        self.getCoordSize = getCoordSize;
         self.getPosition = getPosition;
 
         init(option, grid, series);

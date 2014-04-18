@@ -77,10 +77,10 @@ option = {
     toolbox: {
         show : true,
         feature : {
-            mark : true,
-            dataView : {readOnly: false},
-            restore : true,
-            saveAsImage : true
+            mark : {show: true},
+            dataView : {show: true, readOnly: false},
+            restore : {show: true},
+            saveAsImage : {show: true}
         }
     },
     calculable : true,
@@ -132,7 +132,21 @@ option = {
                     ]);
                 }
                 return d;
-            })()
+            })(),
+            markPoint : {
+                data : [
+                    {type : 'max', name: 'y最大值'},
+                    {type : 'min', name: 'y最小值'},
+                    {type : 'max', name: 'x最大值', valueIndex : 0, symbol:'arrow',itemStyle:{normal:{borderColor:'red'}}},
+                    {type : 'min', name: 'x最小值', valueIndex : 0, symbol:'arrow',itemStyle:{normal:{borderColor:'red'}}}
+                ]
+            },
+            markLine : {
+                data : [
+                    {type : 'average', name: 'y平均值'},
+                    {type : 'average', name: 'x平均值', valueIndex : 0, itemStyle:{normal:{borderColor:'red'}}}
+                ]
+            }
         },
         {
             name:'scatter2',
@@ -180,7 +194,7 @@ option = {
                     normal:{label:{position:'top'}}
                 },
                 data : [
-                    {name : '有个东西', value : 1000, xAxis: 5, yAxis: 5, symbolSize:80},
+                    {name : '有个东西', value : 1000, xAxis: 5, yAxis: 5, symbolSize:80}
                 ]
             }
         }
